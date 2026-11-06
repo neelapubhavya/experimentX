@@ -1,0 +1,961 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>ExperimentX</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout concept: a lab notebook. Squared graph-paper ground, one sticky bar with the player's level,
+   the working app front and centre, project facts from the concept deck below it. */
+:root{
+  --bg:#F3F5F9; --surface:#FFFFFF; --surface2:#EAEFF7; --ink:#0F1B3D; --mute:#56627D; --line:#D3DBE8;
+  --teal:#0B7F7F; --teal-ink:#FFFFFF; --orange:#B85A0C; --violet:#5A4FCF; --good:#12805C; --warn:#B3261E;
+  --grid:rgba(15,27,61,.05); --canvas:#FBFCFE; --shadow:0 1px 0 rgba(15,27,61,.04),0 8px 24px -12px rgba(15,27,61,.18);
+  --f-display:'Familjen Grotesk','Trebuchet MS',system-ui,sans-serif;
+  --f-body:'Figtree',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --f-mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0A1124; --surface:#121B36; --surface2:#19244A; --ink:#E7ECF8; --mute:#9BA8C4; --line:#27345C;
+  --teal:#3EC6BE; --teal-ink:#06222A; --orange:#F29B4B; --violet:#9A92F4; --good:#4BD1A0; --warn:#FF8A80;
+  --grid:rgba(231,236,248,.05); --canvas:#0E1730; --shadow:none; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0A1124; --surface:#121B36; --surface2:#19244A; --ink:#E7ECF8; --mute:#9BA8C4; --line:#27345C;
+  --teal:#3EC6BE; --teal-ink:#06222A; --orange:#F29B4B; --violet:#9A92F4; --good:#4BD1A0; --warn:#FF8A80;
+  --grid:rgba(231,236,248,.05); --canvas:#0E1730; --shadow:none; color-scheme:dark}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.55;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:28px 28px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0}
+h1,h2,h3,h4{font-family:var(--f-display);line-height:1.15;margin:0;text-wrap:balance;letter-spacing:-.01em}
+p{margin:0}
+a{color:var(--teal)}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--violet);outline-offset:2px;border-radius:6px}
+.wrap{max-width:1120px;margin:0 auto}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.eyebrow{font-family:var(--f-mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute)}
+
+/* top bar */
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--surface)}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--surface);border-bottom:1px solid var(--line);
+  margin-left:calc(-1*max(16px,env(safe-area-inset-left,0px)));margin-right:calc(-1*max(16px,env(safe-area-inset-right,0px)));
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.bar .wrap{display:flex;align-items:center;gap:14px;padding:10px 0;flex-wrap:wrap}
+.brand{font-family:var(--f-display);font-weight:700;font-size:20px;display:flex;align-items:center;gap:8px;text-decoration:none;color:var(--ink);margin-right:auto}
+.brand svg{width:26px;height:26px}
+.nav{display:flex;gap:4px;flex-wrap:wrap}
+.nav a{font-size:14px;text-decoration:none;color:var(--mute);padding:6px 10px;border-radius:8px}
+.nav a:hover{background:var(--surface2);color:var(--ink)}
+.score{display:flex;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--line);border-radius:999px;padding:5px 14px 5px 6px}
+.score .lvl{background:var(--teal);color:var(--teal-ink);border-radius:999px;font-family:var(--f-mono);font-size:12px;font-weight:500;padding:3px 9px}
+.score .meter{width:84px;height:6px;border-radius:9px;background:var(--line);overflow:hidden}
+.score .meter i{display:block;height:100%;background:var(--orange);width:0;transition:width .4s}
+.score .pts{font-family:var(--f-mono);font-size:13px}
+.themebtn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:5px 10px;font-size:13px;color:var(--mute)}
+
+/* hero */
+.hero{margin-top:20px;padding:44px 32px;display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:32px;align-items:center;background-color:#0F1B3D;color:#fff;border-radius:18px;background-image:radial-gradient(circle at 96% 8%,#12807F 0 64px,transparent 65px),radial-gradient(circle at 99% 34%,#5A4FCF 0 36px,transparent 37px),radial-gradient(circle at 88% 4%,#D9741A 0 26px,transparent 27px);overflow:hidden}
+.hero h1{color:#fff}.hero .stage{color:#F5A25D;border-color:#F5A25D}.hero figcaption{color:var(--mute)}
+.hero h1{font-size:clamp(40px,7vw,72px);font-weight:700}
+.hero h1 em{font-style:normal;color:#58D3C9}
+.hero-quote{font-family:var(--f-display);font-weight:700;font-size:clamp(26px,4.4vw,42px);line-height:1.08;letter-spacing:-.02em;color:#fff;margin-top:22px;max-width:16ch}
+.hero-quote span{color:#58D3C9}
+.hero .btn:not(.primary){color:#0F1B3D;background:#fff;border-color:#fff}
+.hero .btn:not(.primary):hover{background:#E6F7F5}
+.hero .tag{font-size:19px;color:#C9D4EA;margin-top:14px;max-width:34ch}
+.hero .cta{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:10px 16px;font-weight:600;font-size:15px;transition:transform .1s,background .15s}
+.btn:hover{background:var(--surface2)}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:var(--teal);border-color:var(--teal);color:var(--teal-ink)}
+.btn.primary:hover{filter:brightness(1.08);background:var(--teal)}
+.btn.sm{padding:6px 11px;font-size:13.5px;border-radius:8px}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.stage{display:inline-flex;gap:8px;align-items:center;font-family:var(--f-mono);font-size:12px;border:1px solid var(--orange);color:var(--orange);border-radius:999px;padding:4px 12px;margin-bottom:16px}
+.hero-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px;box-shadow:var(--shadow)}
+.hero-card canvas{width:100%;height:auto;display:block;border-radius:8px;background:var(--canvas)}
+.hero-card figcaption{font-size:13px;color:var(--mute);padding:8px 4px 0}
+
+/* sections */
+section{padding:36px 0}
+.sec-head{margin-bottom:20px;display:grid;gap:6px}
+.sec-head h2{font-size:clamp(26px,4vw,36px)}
+.sec-head p{color:var(--mute);max-width:62ch}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}
+
+/* app */
+.modtabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.modtab{text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:grid;gap:2px}
+.modtab .eyebrow{color:var(--teal)}
+.modtab b{font-family:var(--f-display);font-size:17px}
+.modtab span:last-child{font-size:13px;color:var(--mute)}
+.modtab[aria-selected="true"]{border-color:var(--teal);box-shadow:inset 0 -3px 0 var(--teal)}
+.app{padding:16px}
+.two{display:grid;grid-template-columns:minmax(0,280px) minmax(0,1fr);gap:18px}
+.field{display:grid;gap:6px}
+.field label{font-size:13px;font-weight:600;color:var(--mute)}
+input[type=text],input[type=search],textarea{font:inherit;width:100%;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+textarea{min-height:90px;resize:vertical}
+.list{display:grid;gap:8px;margin-top:12px}
+.item{text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:grid;gap:2px}
+.item b{font-size:15px}
+.item small{color:var(--mute);font-size:12.5px}
+.item[aria-current="true"]{border-color:var(--teal);background:var(--surface2)}
+.item:hover{border-color:var(--teal)}
+.sub{display:flex;gap:6px;flex-wrap:wrap;border-bottom:1px solid var(--line);margin:0 0 14px}
+.sub button{background:none;border:0;border-bottom:3px solid transparent;padding:8px 12px;color:var(--mute);font-weight:600;font-size:14.5px}
+.sub button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--orange)}
+.prose{max-width:66ch}
+.prose p{margin-bottom:10px}
+.prose h4{margin:16px 0 6px;font-size:16px}
+ol.steps{margin:0;padding-left:22px;display:grid;gap:8px;max-width:66ch}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px;font-size:13.5px}
+.chip[aria-pressed="true"]{background:var(--teal);border-color:var(--teal);color:var(--teal-ink)}
+.chip.plain{cursor:default;background:var(--surface2)}
+.note{background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:14px;color:var(--mute)}
+.note b{color:var(--ink)}
+.goal{border:1px dashed var(--orange);border-radius:10px;padding:10px 12px;display:flex;gap:10px;align-items:flex-start;margin-bottom:12px}
+.goal.done{border-style:solid;border-color:var(--good)}
+.goal .eyebrow{color:var(--orange);white-space:nowrap}
+.goal.done .eyebrow{color:var(--good)}
+
+/* lab */
+.lab{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:14px}
+.lab canvas{width:100%;height:auto;display:block;background:var(--canvas);border:1px solid var(--line);border-radius:10px}
+.ctrl{display:grid;gap:3px;margin-bottom:10px}
+.ctrl .row{display:flex;justify-content:space-between;font-size:13.5px;font-weight:600}
+.ctrl output{font-family:var(--f-mono);color:var(--teal)}
+input[type=range]{width:100%;accent-color:var(--teal)}
+.readout{margin:10px 0;border-top:1px solid var(--line)}
+.readout div{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--line);font-size:14px}
+.readout dt{color:var(--mute)}
+.readout dd{margin:0;font-family:var(--f-mono);text-align:right}
+.verdict{font-family:var(--f-display);font-weight:600;font-size:15px;margin:6px 0}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.tablewrap{overflow-x:auto;margin-top:12px}
+table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:480px}
+th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left}
+th{font-size:12.5px;color:var(--mute);font-weight:600}
+td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.caption{font-size:15px;background:var(--surface2);border-left:4px solid var(--orange);border-radius:6px;padding:8px 12px;margin-bottom:10px;min-height:42px}
+
+/* steps in module 3 */
+.stepn{display:flex;gap:12px;align-items:baseline;margin:20px 0 8px}
+.stepn .eyebrow{color:var(--teal)}
+.stepn h3{font-size:19px}
+.coach{display:grid;gap:8px;margin:10px 0}
+.coach li{margin-left:18px}
+.report{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px;margin-top:14px;max-width:760px}
+.report h3{font-size:22px;margin-bottom:4px}
+.report h4{font-size:14px;margin:16px 0 6px;font-family:var(--f-mono);text-transform:uppercase;letter-spacing:.08em;color:var(--teal);font-weight:500}
+.report ul{margin:0;padding-left:20px}
+
+/* progress */
+.badges{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.badge{border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--surface);display:grid;gap:3px}
+.badge .ic{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--surface2);color:var(--mute);font-family:var(--f-mono);font-size:14px}
+.badge.on{border-color:var(--teal)}
+.badge.on .ic{background:var(--teal);color:var(--teal-ink)}
+.badge small{color:var(--mute);font-size:13px}
+.badge:not(.on){opacity:.72}
+
+/* facts */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;display:grid;gap:6px;align-content:start}
+.card h3{font-size:17px}
+.card p{color:var(--mute);font-size:14.5px}
+.journey{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;counter-reset:j}
+.journey div{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px;font-size:14px}
+.journey b{display:block;font-family:var(--f-display);font-size:15px;margin-bottom:2px}
+.journey span{color:var(--mute);font-size:13px}
+.layers{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:10px}
+.layers div{background:var(--ink);color:var(--bg);border-radius:12px;padding:12px;font-size:13.5px}
+.layers b{display:block;font-family:var(--f-display);font-size:15px;margin-bottom:2px}
+.split{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.status ul{margin:6px 0 0;padding-left:20px;color:var(--mute);font-size:14.5px}
+.pill{display:inline-block;font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;padding:2px 8px;border-radius:999px;margin-bottom:4px}
+.pill.done{background:var(--good);color:var(--teal-ink)}
+.pill.plan{background:var(--orange);color:#fff}
+.total{background:var(--ink);color:var(--bg);border-radius:12px;padding:18px;display:grid;gap:6px;align-content:center}
+.total .big{font-family:var(--f-display);font-size:40px;font-weight:700}
+.total ul{margin:0;padding-left:18px;font-size:13.5px;opacity:.85}
+
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:12px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:grid;gap:2px}
+.stat b{font-family:var(--f-display);font-size:28px;color:var(--teal)}
+.stat span{font-size:13.5px;color:var(--mute)}
+.dash2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.mrow{display:grid;grid-template-columns:70px minmax(0,1fr) auto;gap:10px;align-items:center;font-size:13.5px;padding:5px 0}
+.bar2{height:8px;border-radius:9px;background:var(--line);overflow:hidden;display:block}
+.bar2 i{display:block;height:100%;background:var(--orange);transition:width .4s}
+.acts{margin:0;padding-left:18px;color:var(--ink);font-size:14.5px;display:grid;gap:4px}
+.mute-s{font-size:13px;color:var(--mute);margin-top:6px}
+@media (max-width:880px){.dash2{grid-template-columns:minmax(0,1fr)}}
+
+button.badge{text-align:left;font:inherit;color:inherit;cursor:pointer;position:relative;width:100%}
+button.badge:hover{border-color:var(--teal)}
+.badge.sel{outline:3px solid var(--violet);outline-offset:1px}
+.badge .bar2{margin-top:4px}
+.newtag{position:absolute;top:8px;right:8px;background:var(--orange);color:#fff;font-family:var(--f-mono);font-size:10px;letter-spacing:.08em;padding:2px 7px;border-radius:999px}
+.bdetail{margin-top:12px;max-width:560px;padding:14px}
+.bdetail.note{max-width:none}
+.bd-head{display:flex;gap:12px;align-items:center;margin-bottom:8px}
+.bd-head h3{font-size:19px}.bd-head p{color:var(--mute);font-size:14.5px}
+.ic.big{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;background:var(--surface2);color:var(--mute);font-family:var(--f-mono);font-size:18px;flex:none}
+.ic.big.on{background:var(--teal);color:var(--teal-ink)}
+.good{color:var(--good);font-weight:600}
+.lvladder{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin:8px 0}
+.lvstep{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 6px;display:grid;gap:0;text-align:center}
+.lvstep b{font-family:var(--f-mono);font-size:14px}.lvstep small{font-size:12px;color:var(--mute)}
+.lvstep.past{background:var(--surface2)}
+.lvstep.cur{background:var(--teal);border-color:var(--teal);color:var(--teal-ink)}.lvstep.cur small{color:var(--teal-ink)}
+.lvstep[aria-pressed="true"]{outline:3px solid var(--violet);outline-offset:1px}
+.dots{display:flex;gap:10px;margin:8px 0}
+.dot{width:26px;height:26px;border-radius:50%;border:2px solid var(--line);background:var(--surface)}
+.dot.on{background:var(--orange);border-color:var(--orange)}
+.subjcards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:8px}
+.subjc{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:10px;display:grid;gap:6px;text-align:left}
+.subjc:hover{border-color:var(--teal)}.subjc b{font-family:var(--f-display);font-size:15px}.subjc small{color:var(--mute);font-size:12.5px}
+.score{cursor:pointer}
+@media (max-width:560px){.lvladder{grid-template-columns:repeat(3,minmax(0,1fr))}}
+footer{padding:28px 0 40px;color:var(--mute);font-size:14px;border-top:1px solid var(--line);margin-top:20px}
+
+.toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);opacity:0;
+  background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:14px;z-index:40;pointer-events:none;transition:.25s;max-width:90vw;text-align:center}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.ai-tag{font-family:var(--f-mono);font-size:11px;border:1px solid var(--violet);color:var(--violet);border-radius:999px;padding:1px 8px;margin-left:6px;vertical-align:middle}
+
+@media (max-width:880px){
+  .hero{grid-template-columns:minmax(0,1fr);padding:28px 18px}
+  .two,.lab,.split{grid-template-columns:minmax(0,1fr)}
+  .journey{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .layers{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .nav{display:none}
+}
+@media (max-width:560px){
+  .modtabs{grid-template-columns:minmax(0,1fr)}
+  .journey,.layers{grid-template-columns:minmax(0,1fr)}
+  .score .meter{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+</style>
+
+<header class="bar">
+  <div class="wrap">
+    <a class="brand" href="#top" aria-label="ExperimentX home">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M12 3h8v2h-1v7.2l7 11.6A3 3 0 0 1 23.4 28H8.6A3 3 0 0 1 6 23.8L13 12.2V5h-1z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M9 21h14l2.4 4A1 1 0 0 1 24.6 26.5H7.4A1 1 0 0 1 6.6 25z" fill="var(--teal)"/></svg>
+      ExperimentX
+    </a>
+    <nav class="nav" aria-label="Sections">
+      <a href="#lab">Labs</a><a href="#progress">My progress</a>
+    </nav>
+    <div class="score" id="scorechip" role="button" tabindex="0" title="See my progress">
+      <span class="lvl" id="lvl">LV 1</span><span class="meter"><i id="lvlbar"></i></span><span class="pts" id="pts">0 pts</span>
+    </div>
+    <button class="themebtn" id="themebtn" aria-label="Switch colour theme">Theme</button>
+  </div>
+</header>
+
+<main class="wrap" id="top">
+  <div class="hero">
+    <div>
+      <div class="stage">CONCEPT PROPOSAL &middot; EARLY INTERACTIVE DEMO</div>
+      <h1>Experiment<em>X</em></h1>
+      <p class="tag">Learn it. Explore it. Create it.</p>
+      <h2 class="hero-quote">Science is better when <span>you do it.</span></h2>
+      <p class="tag" style="margin-top:10px;font-size:17px;max-width:46ch">A safe, curious space to run experiments, follow the evidence, and build your own questions — even when the school lab is closed.</p>
+      <div class="cta">
+        <button class="btn primary" data-go="1">Start a lab</button>
+        <button class="btn" data-go="2">Explore a concept</button>
+        <button class="btn" data-go="3">Create your own</button>
+      </div>
+    </div>
+    <figure class="hero-card" style="margin:0">
+      <canvas id="herocv" width="960" height="560" aria-label="Animated virtual lab: a block sliding down a ramp"></canvas>
+      <figcaption>A live virtual lab. Open Module 1 to change the angle and friction yourself.</figcaption>
+    </figure>
+  </div>
+
+  <section id="lab" aria-labelledby="lab-h">
+    <div class="sec-head">
+      <p class="eyebrow">The platform</p>
+      <h2 id="lab-h">One platform, three modules</h2>
+      <p>Every module uses the same twelve virtual labs across physics, chemistry, biology and maths. Change a variable, run it, record a trial, and earn points for careful work.</p>
+    </div>
+    <div class="modtabs" role="tablist" aria-label="Modules">
+      <button class="modtab" role="tab" data-mod="1" aria-selected="true"><span class="eyebrow">Module 1</span><b>Textbook Experiments</b><span>Search, learn, watch, then do it.</span></button>
+      <button class="modtab" role="tab" data-mod="2" aria-selected="false"><span class="eyebrow">Module 2</span><b>Beyond the Textbook</b><span>Enter a concept, discover experiments.</span></button>
+      <button class="modtab" role="tab" data-mod="3" aria-selected="false"><span class="eyebrow">Module 3</span><b>Create Your Own</b><span>Choose materials, test, get a report.</span></button>
+    </div>
+    <div class="panel app" id="app"></div>
+  </section>
+
+  <section id="progress" aria-labelledby="pg-h">
+    <div class="sec-head">
+      <p class="eyebrow">Gamified progress</p>
+      <h2 id="pg-h">Points, badges and levels</h2>
+      <p>Points reward curiosity and careful practice: recording trials, finishing experiments and challenges, designing fair tests and writing reports. Progress is saved in this browser only.</p>
+    </div>
+    <div id="dash"></div><p class="eyebrow" style="margin:22px 0 10px">Badges</p><div id="badges"></div>
+    <div class="actions" style="margin-top:14px"><button class="btn sm" id="resetprog">Reset my progress</button></div>
+  </section>
+
+  <footer>ExperimentX: Learn it. Explore it. Create it. &middot; SEVA Innovation Ideathon &middot; Concept proposal with an early interactive demo. Every lab is a simplified model for learning, labelled as such, not a measurement.</footer>
+</main>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(function(){
+'use strict';
+const G=9.8, PI=Math.PI;
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const fmt=(v,d=2)=>Number(v).toFixed(d);
+
+/* ---------- storage + progress ---------- */
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const BLANK=()=>({pts:0,badges:[],labs:[],subs:[],act:[],done:[],m2:[],reports:0,nt:0,newB:[],sc:{Physics:0,Chemistry:0,Biology:0,Maths:0},day:{d:'',n:0}});
+const UI={bf:'all',sel:null,lv:null,reset:false};
+let prog=Object.assign(BLANK(),store.get('ex_prog',{}));
+function logAct(t){prog.act.unshift({t:t});prog.act=prog.act.slice(0,8)}
+const BADGES=[
+ {id:'first',ic:'1',t:'First trial',d:'Record your first trial in any lab.'},
+ {id:'explorer',ic:'3',t:'Lab explorer',d:'Record trials in three different labs.'},
+ {id:'curious',ic:'?',t:'Curious mind',d:'Discover experiments for a concept in Module 2.'},
+ {id:'solver',ic:'✓',t:'Challenge solver',d:'Complete a challenge.'},
+ {id:'fair',ic:'=',t:'Fair tester',d:'Run a fair test: change only one variable.'},
+ {id:'builder',ic:'+',t:'Bench builder',d:'Build a bench with the right materials in Module 3.'},
+ {id:'reporter',ic:'R',t:'Reporter',d:'Generate a lab report.'},
+ {id:'viewer',ic:'▶',t:'Front row',d:'Watch a full experiment demo.'},
+ {id:'allround',ic:'4',t:'All-rounder',d:'Try a lab in Physics, Chemistry, Biology and Maths.'},
+ {id:'goal',ic:'★',t:'Daily goal',d:'Record 5 trials in one day.'},
+ {id:'finisher',ic:'✔',t:'Experiment finisher',d:'Complete a textbook experiment (3 trials).'}
+];
+const LEVELS=['Beginner','Observer','Tester','Investigator','Scientist','Innovator'];
+function saveProg(){store.set('ex_prog',prog);drawScore();drawBadges();drawDash()}
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove('show'),2400)}
+function addPts(n,why){prog.pts+=n;toast('+'+n+' points: '+why);saveProg()}
+function award(id){if(prog.badges.includes(id))return;prog.badges.push(id);prog.newB.push(id);const b=BADGES.find(x=>x.id===id);saveProg();setTimeout(()=>toast('Badge unlocked: '+b.t),600)}
+function drawScore(){
+  const lv=Math.floor(prog.pts/100)+1;
+  $('#lvl').textContent='LV '+lv; $('#pts').textContent=prog.pts+' pts'; $('#lvlbar').style.width=(prog.pts%100)+'%';
+  $('#lvl').title=LEVELS[Math.min(lv-1,LEVELS.length-1)];
+}
+function drawBadges(){}
+/* ---------- virtual labs ---------- */
+const LABS={
+ incline:{name:'Inclined plane',
+  keywords:['friction','incline','inclined','ramp','slope','slide','sliding','block','rough','surface','lubricant','oil','sandpaper','mass','weight','acceleration'],
+  params:[{k:'angle',l:'Ramp angle',u:'°',min:0,max:60,step:1,v:25},{k:'mu',l:'Friction coefficient μ',u:'',min:0,max:1,step:0.05,v:0.3},{k:'mass',l:'Block mass',u:'kg',min:0.5,max:5,step:0.5,v:1}],
+  materials:{essential:['Ramp','Wooden block','Protractor'],extra:['Sandpaper','Cooking oil','Salt','Beaker','Thermometer']},
+  calc(p){const th=p.angle*PI/180,slides=Math.tan(th)>p.mu+1e-9,a=slides?G*(Math.sin(th)-p.mu*Math.cos(th)):0,tt=slides?Math.sqrt(4/a):null;
+    return{slides,a,t:tt,rows:[['Pull down the slope',fmt(p.mass*G*Math.sin(th))+' N'],['Maximum friction',fmt(p.mu*p.mass*G*Math.cos(th))+' N'],['Acceleration',fmt(a)+' m/s²'],['Time to slide 2 m',tt?fmt(tt)+' s':'does not slide']],
+      key:{label:'Acceleration',value:a,unit:'m/s²',d:2},verdict:slides?'The block slides':'The block stays at rest'}},
+  draw(c,p,r,t){const th=p.angle*PI/180,L=330,Bx=580,By=300,Tx=Bx-L*Math.cos(th),Ty=By-L*Math.sin(th);
+    c.fillStyle=col('--surface2');c.beginPath();c.moveTo(Tx,Ty);c.lineTo(Bx,By);c.lineTo(Tx,By);c.closePath();c.fill();
+    c.strokeStyle=col('--ink');c.lineWidth=3;c.beginPath();c.moveTo(Tx,Ty);c.lineTo(Bx,By);c.lineTo(Tx-30,By);c.stroke();
+    const w=26+p.mass*4,h=18+p.mass*3,s=r.slides?Math.min(2,0.5*r.a*t*t):0,px=(s/2)*(L-w-10)+4;
+    c.save();c.translate(Tx+px*Math.cos(th),Ty+px*Math.sin(th));c.rotate(th);c.fillStyle=col('--orange');c.fillRect(0,-h,w,h);c.strokeStyle=col('--ink');c.lineWidth=2;c.strokeRect(0,-h,w,h);
+    c.fillStyle='#fff';c.font='600 15px '+FB;c.textAlign='center';c.fillText(fmt(p.mass,1)+' kg',w/2,-h/2+4);c.restore();
+        c.beginPath();c.arc(Bx,By,52,PI,PI+th);c.strokeStyle=col('--teal');c.lineWidth=3;c.stroke();
+    c.fillStyle=col('--teal');c.font='600 17px '+FM;c.textAlign='right';c.fillText(p.angle+'°',Bx-62,By-8);
+    c.fillStyle=col('--mute');c.font='17px '+FB;c.textAlign='left';c.fillText('μ = '+fmt(p.mu),16,24);
+    c.fillText(r.slides?(t>=r.t?'Reached the bottom in '+fmt(r.t)+' s':'Sliding…'):'Static: friction holds the block',16,44)}},
+ pendulum:{name:'Simple pendulum',
+  keywords:['pendulum','swing','oscillation','oscillate','period','time period','frequency','string','bob','length','amplitude','vibration','clock','periodic','stopwatch'],
+  params:[{k:'len',l:'String length',u:'m',min:0.2,max:2,step:0.05,v:1},{k:'amp',l:'Starting angle',u:'°',min:5,max:40,step:1,v:15},{k:'mass',l:'Bob mass',u:'kg',min:0.1,max:2,step:0.1,v:0.5}],
+  materials:{essential:['String','Metal bob','Stopwatch','Stand'],extra:['Magnet','Beaker','Salt','Spring']},
+  calc(p){const a=p.amp*PI/180,T=2*PI*Math.sqrt(p.len/G)*(1+a*a/16);
+    return{T,rows:[['Time period T',fmt(T,3)+' s'],['Frequency',fmt(1/T,3)+' Hz'],['Time for 10 swings',fmt(10*T,2)+' s']],key:{label:'Time period',value:T,unit:'s',d:3},verdict:'One full swing takes '+fmt(T,2)+' s'}},
+  draw(c,p,r,t){const px=60+(p.len-0.2)/1.8*210,cx=320,cy=36,th=p.amp*PI/180*Math.cos(2*PI*t/r.T),bx=cx+px*Math.sin(th),by=cy+px*Math.cos(th),rad=9+p.mass*8;
+    c.strokeStyle=col('--line');c.setLineDash([4,4]);c.lineWidth=1.5;c.beginPath();c.moveTo(cx,cy);c.lineTo(cx,cy+px+rad);c.stroke();c.setLineDash([]);
+    c.strokeStyle=col('--line');c.beginPath();c.arc(cx,cy,px,PI/2-p.amp*PI/180,PI/2+p.amp*PI/180);c.stroke();
+    c.strokeStyle=col('--ink');c.lineWidth=2;c.beginPath();c.moveTo(cx,cy);c.lineTo(bx,by);c.stroke();
+    c.fillStyle=col('--ink');c.fillRect(cx-60,cy-10,120,8);
+    c.fillStyle=col('--violet');c.beginPath();c.arc(bx,by,rad,0,2*PI);c.fill();c.strokeStyle=col('--ink');c.stroke();
+    c.fillStyle=col('--mute');c.font='17px '+FB;c.textAlign='left';c.fillText('Swings counted: '+Math.floor(t/r.T),16,24);c.fillText('Time: '+fmt(t,1)+' s',16,44)}},
+ projectile:{name:'Projectile launcher',
+  keywords:['projectile','throw','launch','range','angle','ball','trajectory','cannon','distance','speed','velocity','motion','gravity','height','kick'],
+  params:[{k:'v',l:'Launch speed',u:'m/s',min:5,max:30,step:1,v:20},{k:'ang',l:'Launch angle',u:'°',min:5,max:85,step:1,v:45}],
+  materials:{essential:['Launcher','Ball','Measuring tape'],extra:['Thermometer','Salt','Magnet']},
+  calc(p){const a=p.ang*PI/180,vx=p.v*Math.cos(a),vy=p.v*Math.sin(a),T=2*vy/G,R=vx*T,H=vy*vy/(2*G);
+    return{vx,vy,T,R,H,rows:[['Range',fmt(R)+' m'],['Highest point',fmt(H)+' m'],['Time in the air',fmt(T)+' s']],key:{label:'Range',value:R,unit:'m',d:2},verdict:'The ball lands '+fmt(R,1)+' m away'}},
+  draw(c,p,r,t){const gy=300,x0=40,sc=5.4,tt=Math.min(t,r.T);
+    c.strokeStyle=col('--ink');c.lineWidth=3;c.beginPath();c.moveTo(10,gy);c.lineTo(630,gy);c.stroke();
+    c.strokeStyle=col('--line');c.setLineDash([5,5]);c.lineWidth=2;c.beginPath();for(let i=0;i<=60;i++){const s=r.T*i/60,x=x0+r.vx*s*sc,y=gy-(r.vy*s-0.5*G*s*s)*sc;i?c.lineTo(x,y):c.moveTo(x,y)}c.stroke();c.setLineDash([]);
+    for(let m=10;m<=100;m+=10){const x=x0+m*sc;if(x>630)break;c.fillStyle=col('--mute');c.font='14px '+FM;c.textAlign='center';c.fillText(m,x,gy+16)}
+    const bx=x0+r.vx*tt*sc,by=gy-(r.vy*tt-0.5*G*tt*tt)*sc;
+    c.fillStyle=col('--teal');c.beginPath();c.arc(bx,by,8,0,2*PI);c.fill();c.strokeStyle=col('--ink');c.lineWidth=2;c.stroke();
+    if(t>=r.T){c.fillStyle=col('--orange');c.beginPath();c.arc(x0+r.R*sc,gy,5,0,2*PI);c.fill()}
+    c.save();c.translate(x0,gy);c.rotate(-p.ang*PI/180);c.fillStyle=col('--ink');c.fillRect(-6,-5,34,10);c.restore();
+    c.fillStyle=col('--mute');c.font='17px '+FB;c.textAlign='left';c.fillText('Distance scale in metres',16,24)}},
+ circuit:{name:"Ohm's law circuit",
+  keywords:['circuit','current','voltage','resistance','ohm','battery','electric','electricity','bulb','resistor','ampere','power','wire','fuse'],
+  params:[{k:'V',l:'Battery voltage',u:'V',min:1,max:12,step:1,v:6},{k:'R',l:'Resistance',u:'Ω',min:1,max:100,step:1,v:20}],
+  materials:{essential:['Battery','Resistor','Connecting wires','Ammeter'],extra:['Beaker','Spring','Salt','Stopwatch']},
+  calc(p){const I=p.V/p.R,P=p.V*I;return{I,P,rows:[['Current I = V / R',fmt(I,3)+' A'],['Power P = V × I',fmt(P)+' W'],['Safety',I>5?'Wire would overheat':'Safe']],
+    key:{label:'Current',value:I,unit:'A',d:3},verdict:I>5?'Too much current: a real wire could overheat. This is why labs use fuses.':'Current flows steadily'}},
+  draw(c,p,r,t){const x1=90,x2=550,y1=70,y2=270;c.strokeStyle=col('--ink');c.lineWidth=3;c.beginPath();c.rect(x1,y1,x2-x1,y2-y1);c.stroke();
+    c.fillStyle=col('--canvas');c.fillRect(x1-18,150,36,60);c.strokeStyle=col('--ink');c.lineWidth=4;c.beginPath();c.moveTo(x1-16,165);c.lineTo(x1+16,165);c.moveTo(x1-8,185);c.lineTo(x1+8,185);c.stroke();
+    c.fillStyle=col('--mute');c.font='17px '+FB;c.textAlign='left';c.fillText(p.V+' V',x1+24,180);
+    c.fillStyle=col('--canvas');c.fillRect(250,y1-14,140,28);c.strokeStyle=col('--orange');c.lineWidth=3;c.beginPath();c.moveTo(250,y1);for(let i=0;i<8;i++)c.lineTo(250+10+i*17.5,y1+(i%2?10:-10));c.lineTo(390,y1);c.stroke();
+    c.fillStyle=col('--mute');c.textAlign='center';c.fillText(p.R+' Ω',320,y1-22);
+    const br=Math.min(1,r.I/1.5);c.fillStyle='rgba(255,200,60,'+(0.15+0.75*br)+')';c.beginPath();c.arc(x2,180,34,0,2*PI);c.fill();
+    if(br>0.05){c.fillStyle='rgba(255,210,80,'+(0.25*br)+')';c.beginPath();c.arc(x2,180,34+30*br,0,2*PI);c.fill()}
+    c.strokeStyle=col('--ink');c.lineWidth=3;c.beginPath();c.arc(x2,180,22,0,2*PI);c.stroke();c.fillStyle=col('--mute');c.fillText('Lamp',x2,232);
+    const per=2*((x2-x1)+(y2-y1)),sp=Math.min(260,r.I*70);c.fillStyle=col('--teal');
+    for(let i=0;i<22;i++){let d=((i/22)*per+t*sp)%per,x,y;if(d<x2-x1){x=x1+d;y=y1}else if(d<x2-x1+y2-y1){x=x2;y=y1+d-(x2-x1)}else if(d<2*(x2-x1)+y2-y1){x=x2-(d-(x2-x1)-(y2-y1));y=y2}else{x=x1;y=y2-(d-2*(x2-x1)-(y2-y1))}c.beginPath();c.arc(x,y,3.5,0,2*PI);c.fill()}
+    c.fillStyle=col('--mute');c.textAlign='left';c.fillText('Moving charges: faster means more current',16,24)}},
+ buoyancy:{name:'Float or sink tank',
+  keywords:['float','sink','buoyancy','buoyant','density','archimedes','liquid','water','oil','upthrust','displace','displacement','pressure','brine'],
+  params:[{k:'od',l:'Object density',u:'kg/m³',min:100,max:3000,step:50,v:600},{k:'ld',l:'Liquid density',u:'kg/m³',min:700,max:1400,step:50,v:1000}],
+  materials:{essential:['Tank of liquid','Test object','Spring balance'],extra:['Magnet','Stopwatch','Thermometer']},
+  calc(p){const V=0.001,W=p.od*V*G,f=p.od<=p.ld?p.od/p.ld:1,Fb=p.ld*V*f*G;const v=p.od<p.ld?'Floats':p.od===p.ld?'Hovers':'Sinks';
+    return{W,Fb,f,v,rows:[['Weight of 1 litre of object',fmt(W)+' N'],['Upward force from liquid',fmt(Fb)+' N'],['Part under the surface',fmt(f*100,0)+' %']],key:{label:'Part submerged',value:f*100,unit:'%',d:0},verdict:'The object '+v.toLowerCase()}},
+  draw(c,p,r,t){const tx=170,tw=300,ty=90,tb=300,wl=140,s=60;
+    c.fillStyle=col('--teal');c.globalAlpha=.22;c.fillRect(tx,wl,tw,tb-wl);c.globalAlpha=1;
+    c.strokeStyle=col('--ink');c.lineWidth=3;c.beginPath();c.moveTo(tx,ty);c.lineTo(tx,tb);c.lineTo(tx+tw,tb);c.lineTo(tx+tw,ty);c.stroke();
+    c.strokeStyle=col('--teal');c.lineWidth=2;c.beginPath();c.moveTo(tx,wl);c.lineTo(tx+tw,wl);c.stroke();
+    const target=r.v==='Sinks'?tb-s:wl-s*(1-r.f),start=wl-s-60,k=Math.exp(-2.2*t),y=target+(start-target)*k*Math.cos(7*t);
+    const yy=r.v==='Sinks'?Math.min(y,tb-s):y;
+    c.fillStyle=col('--orange');c.fillRect(tx+tw/2-s/2,yy,s,s);c.strokeStyle=col('--ink');c.lineWidth=2;c.strokeRect(tx+tw/2-s/2,yy,s,s);
+    c.fillStyle='#fff';c.font='600 15px '+FM;c.textAlign='center';c.fillText(p.od,tx+tw/2,yy+s/2+4);
+    c.fillStyle=col('--mute');c.font='17px '+FB;c.textAlign='left';c.fillText('Liquid density '+p.ld+' kg/m³',16,24);c.fillText('Object density in the box',16,44)}},
+ salt:{name:'Dissolving salt',subject:'Chemistry',
+  keywords:['dissolv','solubility','saturat',' salt','solution','solute','solvent','sugar','stir'],
+  params:[{k:'temp',l:'Water temperature',u:'°C',min:5,max:95,step:5,v:20},{k:'salt',l:'Salt added (per 100 mL)',u:'g',min:5,max:60,step:5,v:20},{k:'stir',l:'Stirring (0 none, 3 fast)',u:'',min:0,max:3,step:1,v:1}],
+  materials:{essential:['Beaker','Water','Salt','Thermometer','Balance'],extra:['Magnifying glass','Ramp','Spring']},
+  calc(p){const s=35.6+0.035*p.temp,d=Math.min(p.salt,s),u=Math.max(0,p.salt-s),tt=d/(0.9*(1+p.temp/40)*(1+p.stir)),conc=d/(100+d)*100;
+   return{s,d,u,tt,rows:[['Most that can dissolve',fmt(s,1)+' g'],['Dissolved',fmt(d,1)+' g'],['Left undissolved',fmt(u,1)+' g'],['Time to dissolve (model)',fmt(tt,1)+' s'],['Concentration',fmt(conc,1)+' %']],
+    key:{label:'Time to dissolve',value:tt,unit:'s',d:1},verdict:u>0.05?'Saturated: '+fmt(u,1)+' g stays undissolved':'All the salt dissolves'}},
+  draw(c,p,r,t){const bx=200,bw=240,top=70,bot=300,wl=120,f=Math.min(1,t/Math.max(0.5,r.tt));
+   c.fillStyle=col('--teal');c.globalAlpha=.12+.25*(r.d*f)/40;c.fillRect(bx,wl,bw,bot-wl);c.globalAlpha=1;
+   c.strokeStyle=col('--ink');c.lineWidth=3;c.beginPath();c.moveTo(bx,top);c.lineTo(bx,bot);c.lineTo(bx+bw,bot);c.lineTo(bx+bw,top);c.stroke();
+   const left=p.salt-r.d*f,nC=Math.round(left/60*40);c.fillStyle=col('--ink');c.globalAlpha=.85;
+   for(let i=0;i<nC;i++){const x=bx+14+((i*37)%(bw-28)),y=bot-8-((i*13)%5)*4-Math.floor(i/14)*5;c.fillRect(x,y,6,6)}c.globalAlpha=1;
+   const nD=Math.round(r.d*f/40*60),sp=1+p.stir*1.5;c.fillStyle=col('--teal');
+   for(let i=0;i<nD;i++){const x=bx+12+(Math.sin(i*12.9+t*sp*0.9)*0.5+0.5)*(bw-24),y=wl+10+(Math.cos(i*7.7+t*sp*0.7)*0.5+0.5)*(bot-wl-30);c.beginPath();c.arc(x,y,3,0,2*PI);c.fill()}
+   if(p.stir>0){c.strokeStyle=col('--orange');c.lineWidth=4;const sx=bx+bw/2+Math.sin(t*3*p.stir)*30;c.beginPath();c.moveTo(sx,top-20);c.lineTo(sx,bot-30);c.stroke()}
+   c.fillStyle=col('--mute');c.font='17px '+FM;c.textAlign='left';c.fillText(p.temp+' °C',bx+bw+20,140);
+   c.font='17px '+FB;c.fillText('Dissolved: '+fmt(r.d*f,1)+' g',16,24);c.fillText('Undissolved: '+fmt(left,1)+' g',16,48)}},
+ acid:{name:'Acid–base titration',subject:'Chemistry',
+  keywords:[' acid',' base ',' bases','alkali','neutral','titrat',' ph ','indicator','naoh','hcl','vinegar','lemon'],
+  params:[{k:'Vb',l:'Base added',u:'mL',min:0,max:60,step:0.5,v:10},{k:'Ca',l:'Acid strength',u:'M',min:0.05,max:0.2,step:0.05,v:0.1},{k:'Cb',l:'Base strength',u:'M',min:0.05,max:0.2,step:0.05,v:0.1}],
+  materials:{essential:['Burette','Conical flask','Dilute acid','Dilute base','Indicator'],extra:['Magnet','Ramp','Spring']},
+  calc(p){const phAt=V=>{const na=p.Ca*0.025,nb=p.Cb*V/1000,tv=0.025+V/1000;if(Math.abs(na-nb)<1e-9)return 7;return na>nb?-Math.log10((na-nb)/tv):14+Math.log10((nb-na)/tv)};
+   const v=phAt(p.Vb),ve=p.Ca*25/p.Cb;
+   return{v,ve,phAt,rows:[['Acid in the flask','25 mL of '+p.Ca+' M'],['Equivalence point',fmt(ve,1)+' mL'],['pH now',fmt(v,2)],['Indicator',v>=8.2?'Pink':'Colourless']],
+    key:{label:'pH',value:v,unit:'',d:2},verdict:v<6.5?'Acidic: more base is needed':v<=7.5?'Close to neutral: near the endpoint':'Alkaline: too much base added'}},
+  draw(c,p,r,t){const a=Math.max(0,Math.min(1,(r.v-8.2)/1.5));
+   c.strokeStyle=col('--ink');c.lineWidth=3;c.fillStyle=a>0?'rgba(236,72,153,'+(0.25+0.6*a)+')':col('--surface2');
+   c.beginPath();c.moveTo(80,200);c.lineTo(160,200);c.lineTo(200,300);c.lineTo(40,300);c.closePath();c.fill();c.stroke();c.strokeRect(100,150,40,50);
+   c.fillStyle=col('--teal');c.globalAlpha=.35;c.fillRect(112,20,16,Math.min(110,10+p.Vb*1.6));c.globalAlpha=1;c.strokeStyle=col('--ink');c.strokeRect(112,20,16,120);
+   if(p.Vb>0){const y=145+((t*90)%50);c.fillStyle=col('--teal');c.beginPath();c.arc(120,y,4,0,2*PI);c.fill()}
+   const X0=330,X1=620,Y0=40,Y1=270,px=v=>X0+v/60*(X1-X0),py=h=>Y1-h/14*(Y1-Y0);
+   c.strokeStyle=col('--line');c.lineWidth=1;for(let h=0;h<=14;h+=7){c.beginPath();c.moveTo(X0,py(h));c.lineTo(X1,py(h));c.stroke()}
+   c.strokeStyle=col('--ink');c.lineWidth=2;c.beginPath();c.moveTo(X0,Y0);c.lineTo(X0,Y1);c.lineTo(X1,Y1);c.stroke();
+   c.strokeStyle=col('--violet');c.lineWidth=3;c.beginPath();for(let V=0;V<=60;V+=0.5){const x=px(V),y=py(r.phAt(V));V?c.lineTo(x,y):c.moveTo(x,y)}c.stroke();
+   if(r.ve<=60){c.setLineDash([5,5]);c.strokeStyle=col('--orange');c.lineWidth=2;c.beginPath();c.moveTo(px(r.ve),Y0);c.lineTo(px(r.ve),Y1);c.stroke();c.setLineDash([])}
+   c.fillStyle=col('--orange');c.beginPath();c.arc(px(p.Vb),py(r.v),7,0,2*PI);c.fill();
+   c.fillStyle=col('--mute');c.font='14px '+FM;c.textAlign='right';c.fillText('14',X0-6,Y0+5);c.fillText('7',X0-6,py(7)+5);c.fillText('0',X0-6,Y1+5);
+   c.textAlign='center';c.font='15px '+FB;c.fillText('Base added (mL)',(X0+X1)/2,Y1+24);c.fillText('pH',X0+14,Y0-10);c.textAlign='left';c.fillText('pH '+fmt(r.v,2),16,24)}},
+ rate:{name:'Rate of reaction',subject:'Chemistry',
+  keywords:['reaction','rate of','collision','catalyst',' react','concentrat','particles'],
+  params:[{k:'T',l:'Temperature',u:'°C',min:10,max:80,step:5,v:20},{k:'C',l:'Concentration',u:'M',min:0.2,max:2,step:0.2,v:1}],
+  materials:{essential:['Reaction vessel','Thermometer','Stopwatch','Reactant solution'],extra:['Magnet','Ramp','Spring']},
+  calc(p){const rel=p.C*Math.pow(2,(p.T-20)/10),tt=40/rel;
+   return{rel,tt,rows:[['Relative rate',fmt(rel,2)+' ×'],['Time to finish (model)',fmt(tt,1)+' s'],['Particles in the box',Math.round(14+p.C*16)+'']],key:{label:'Time to finish',value:tt,unit:'s',d:1},verdict:'The reaction finishes in about '+fmt(tt,1)+' s (model time)'}},
+  draw(c,p,r,t){const N=Math.round(14+p.C*16),sp=0.6+Math.sqrt(p.T+273)/10*0.4,mt=t*4,f=Math.min(1,mt/r.tt),x0=40,x1=600,y0=50,y1=300;
+   c.strokeStyle=col('--ink');c.lineWidth=3;c.strokeRect(x0,y0,x1-x0,y1-y0);
+   const tri=(v,L)=>{const m=((v%(2*L))+2*L)%(2*L);return m<L?m:2*L-m};
+   for(let i=0;i<N;i++){const a=(i*97%100)/100,b=(i*53%100)/100,vx=(40+((i*31)%60))*sp,vy=(35+((i*17)%60))*sp,W=x1-x0-16,Hh=y1-y0-16;
+    const x=x0+8+tri(a*W+vx*t,W),y=y0+8+tri(b*Hh+vy*t,Hh);c.fillStyle=(i/N<f)?col('--teal'):col('--orange');c.beginPath();c.arc(x,y,6,0,2*PI);c.fill()}
+   c.fillStyle=col('--mute');c.font='17px '+FB;c.textAlign='left';c.fillText('Model time: '+fmt(Math.min(mt,r.tt),1)+' s',16,24);c.textAlign='right';c.fillText('Orange: reactant   Teal: product',624,24)}},
+ photo:{name:'Photosynthesis in pondweed',subject:'Biology',
+  keywords:['photosynth','plant','leaf','leaves','oxygen','chlorophyll','pondweed','light intensity','bubbles','algae'],
+  params:[{k:'d',l:'Lamp distance',u:'cm',min:10,max:100,step:5,v:30},{k:'co2',l:'CO₂ (hydrogencarbonate)',u:'%',min:0,max:2,step:0.1,v:0.5},{k:'T',l:'Water temperature',u:'°C',min:10,max:45,step:1,v:25}],
+  materials:{essential:['Pondweed','Beaker','Lamp','Ruler','Sodium hydrogencarbonate'],extra:['Magnet','Ramp','Spring']},
+  calc(p){const L=1/(1+Math.pow(p.d/40,2)),Cf=p.co2/(p.co2+0.4),Tf=Math.exp(-Math.pow((p.T-30)/12,2))*(p.T>38?Math.max(0,1-(p.T-38)/7):1),b=70*L*Cf*Tf,mn=Math.min(L,Cf,Tf),lim=mn===L?'light':mn===Cf?'carbon dioxide':'temperature';
+   return{L,Cf,Tf,b,rows:[['Light available',fmt(L*100,0)+' %'],['CO₂ available',fmt(Cf*100,0)+' %'],['Enzyme activity',fmt(Tf*100,0)+' %'],['Oxygen bubbles',fmt(b,1)+' per min']],key:{label:'Oxygen bubbles',value:b,unit:'/min',d:1},verdict:b<0.05?'No bubbles: '+lim+' is missing':'Limiting factor: '+lim}},
+  draw(c,p,r,t){const bx=340,bw=170,wl=120,bot=300,lx=Math.max(34,bx-26-p.d*2.6);
+   c.fillStyle=col('--teal');c.globalAlpha=.16;c.fillRect(bx,wl,bw,bot-wl);c.globalAlpha=1;c.strokeStyle=col('--ink');c.lineWidth=3;c.beginPath();c.moveTo(bx,70);c.lineTo(bx,bot);c.lineTo(bx+bw,bot);c.lineTo(bx+bw,70);c.stroke();
+   c.strokeStyle=col('--good');c.lineWidth=4;c.beginPath();c.moveTo(bx+bw/2,bot);c.lineTo(bx+bw/2,160);c.stroke();
+   for(let i=0;i<5;i++){const y=270-i*24,s=i%2?1:-1;c.beginPath();c.ellipse(bx+bw/2+s*18,y,16,6,s*-0.5,0,2*PI);c.fillStyle=col('--good');c.fill()}
+   c.fillStyle='#F5C542';c.beginPath();c.arc(lx,180,16,0,2*PI);c.fill();c.strokeStyle=col('--ink');c.lineWidth=2;c.stroke();
+   const nr=1+Math.round(r.L*6);c.strokeStyle='rgba(245,197,66,'+(0.25+0.5*r.L)+')';c.lineWidth=2;for(let i=0;i<nr;i++){const y=140+i*(80/Math.max(1,nr-1));c.beginPath();c.moveTo(lx+18,180);c.lineTo(bx,y);c.stroke()}
+   const per=r.b>0.05?60/r.b:1e9;c.fillStyle=col('--canvas');c.strokeStyle=col('--ink');c.lineWidth=1.5;
+   if(per<1e8){for(let k=Math.max(0,Math.floor((t-2.6)/per));k<=Math.floor(t/per)&&k<60;k++){const tau=t-k*per;if(tau<=0||tau>2.6)continue;const y=270-tau*55,x=bx+bw/2+10+Math.sin(tau*4+k)*7;c.beginPath();c.arc(x,y,4,0,2*PI);c.fill();c.stroke()}}
+   c.fillStyle=col('--mute');c.font='17px '+FB;c.textAlign='left';c.fillText('Lamp '+p.d+' cm away',16,24);c.fillText('Bubbles counted: '+(per<1e8?Math.floor(t/per):0),16,48)}},
+ osmosis:{name:'Osmosis in potato',subject:'Biology',
+  keywords:['osmosis','potato','cell','diffusion','membrane','turgid','plasmol','salty'],
+  params:[{k:'c',l:'Salt solution strength',u:'%',min:0,max:10,step:0.5,v:0},{k:'tm',l:'Time in solution',u:'min',min:10,max:120,step:10,v:60}],
+  materials:{essential:['Potato cylinders','Beakers','Salt solution','Balance','Ruler'],extra:['Magnet','Ramp','Spring']},
+  calc(p){const ch=12*Math.tanh((1-p.c)/2.5)*(1-Math.exp(-p.tm/45)),dir=ch>0.3?'Water moves into the potato':ch<-0.3?'Water moves out of the potato':'No net movement';
+   return{ch,rows:[['Potato mass change',(ch>0?'+':'')+fmt(ch,1)+' %'],['Water movement',dir],['Potato feels',ch>0.3?'Firm (turgid)':ch<-0.3?'Soft (flaccid)':'Unchanged']],key:{label:'Mass change',value:ch,unit:'%',d:1},verdict:dir}},
+  draw(c,p,r,t){const bx=170,bw=300,wl=130,bot=300,f=Math.min(1,t/3),cur=r.ch*f,len=110*(1+cur/100*3),cx=bx+bw/2;
+   c.fillStyle=col('--teal');c.globalAlpha=.12+Math.min(.3,p.c/10*.3);c.fillRect(bx,wl,bw,bot-wl);c.globalAlpha=1;c.strokeStyle=col('--ink');c.lineWidth=3;c.beginPath();c.moveTo(bx,70);c.lineTo(bx,bot);c.lineTo(bx+bw,bot);c.lineTo(bx+bw,70);c.stroke();
+   c.fillStyle='#C9A66B';c.fillRect(cx-22,(wl+bot)/2-len/2,44,len);c.strokeStyle=col('--ink');c.lineWidth=2;c.strokeRect(cx-22,(wl+bot)/2-len/2,44,len);
+   if(Math.abs(r.ch)>0.3){c.strokeStyle=col('--teal');c.lineWidth=3;const dir=r.ch>0?-1:1;for(let i=0;i<6;i++){const s=i%2?1:-1,ph=((t*40+i*17)%50)/50,x=cx+s*(110-(r.ch>0?ph:1-ph)*70),y=(wl+bot)/2+(i-2.5)*22;c.beginPath();c.moveTo(x,y);c.lineTo(x+s*-12,y);c.stroke();c.beginPath();c.arc(x,y,4,0,2*PI);c.fillStyle=col('--teal');c.fill()}}
+   c.fillStyle=col('--mute');c.font='17px '+FB;c.textAlign='left';c.fillText('Salt solution: '+p.c+' %',16,24);c.fillText('Time-lapse: '+fmt(p.tm*f,0)+' min',16,48);c.fillText('Mass change: '+(cur>0?'+':'')+fmt(cur,1)+' %',16,72)}},
+ prob:{name:'Coin flips',subject:'Maths',stochastic:true,
+  keywords:['probabil','coin','dice','chance','random','toss','flip','heads','fair'],
+  params:[{k:'n',l:'Number of flips',u:'',min:10,max:2000,step:10,v:50},{k:'p',l:'Chance of heads',u:'',min:0.1,max:0.9,step:0.1,v:0.5}],
+  materials:{essential:['Coin','Tally sheet','Calculator'],extra:['Beaker','Magnet','Spring']},
+  calc(p){const cum=new Int32Array(p.n+1);for(let i=0;i<p.n;i++)cum[i+1]=cum[i]+(Math.random()<p.p?1:0);const h=cum[p.n],pc=h/p.n*100,exp=Math.round(p.p*100),diff=Math.abs(pc-exp);
+   return{cum,h,pc,rows:[['Heads',h+' of '+p.n],['Tails',(p.n-h)+' of '+p.n],['Heads found',fmt(pc,1)+' %'],['Expected',exp+' %'],['Gap from expected',fmt(diff,1)+' points']],key:{label:'Heads found',value:pc,unit:'%',d:1},verdict:diff<=3?'Close to the expected '+exp+' %':'Noticeably off the expected '+exp+' %'}},
+  draw(c,p,r,t){const X0=50,X1=610,Y0=50,Y1=290,nt=Math.max(1,Math.ceil(Math.min(1,t/3.5)*p.n)),yy=v=>Y1-v*(Y1-Y0);
+   c.strokeStyle=col('--line');c.lineWidth=1;for(let v=0;v<=1;v+=.25){c.beginPath();c.moveTo(X0,yy(v));c.lineTo(X1,yy(v));c.stroke()}
+   c.strokeStyle=col('--ink');c.lineWidth=2;c.beginPath();c.moveTo(X0,Y0);c.lineTo(X0,Y1);c.lineTo(X1,Y1);c.stroke();
+   c.setLineDash([6,5]);c.strokeStyle=col('--orange');c.beginPath();c.moveTo(X0,yy(p.p));c.lineTo(X1,yy(p.p));c.stroke();c.setLineDash([]);
+   c.strokeStyle=col('--violet');c.lineWidth=2.5;c.beginPath();for(let k=1;k<=nt;k++){const x=X0+k/p.n*(X1-X0),y=yy(r.cum[k]/k);k===1?c.moveTo(x,y):c.lineTo(x,y)}c.stroke();
+   c.fillStyle=col('--mute');c.font='14px '+FM;c.textAlign='right';c.fillText('100%',X0-6,Y0+5);c.fillText('50%',X0-6,yy(.5)+5);c.fillText('0%',X0-6,Y1+5);
+   c.textAlign='left';c.font='17px '+FB;c.fillText('Flips: '+nt+'   Heads: '+r.cum[nt]+'   Found: '+fmt(r.cum[nt]/nt*100,1)+' %',16,24);
+   c.textAlign='right';c.fillStyle=col('--orange');c.fillText('Dashed line: expected',X1,Y1+24)}},
+ line:{name:'Straight-line graph',subject:'Maths',
+  keywords:['graph','gradient','intercept','linear','straight line','equation','y = mx','y=mx',' line '],
+  params:[{k:'m',l:'Slope m',u:'',min:-5,max:5,step:0.5,v:1},{k:'c',l:'Y-intercept c',u:'',min:-5,max:5,step:1,v:0}],
+  materials:{essential:['Graph paper','Ruler','Pencil'],extra:['Beaker','Magnet','Spring']},
+  calc(p){const T=[[1,3],[3,7],[-1,-1]],hit=T.map(q=>Math.abs(p.m*q[0]+p.c-q[1])<0.05),n=hit.filter(Boolean).length;
+   const ms=p.m===0?'':(p.m===1?'x':p.m===-1?'-x':String(p.m)+'x'),cs=p.c===0?'':(p.c>0?(ms?' + ':'')+p.c:(ms?' - ':'-')+Math.abs(p.c)),eq='y = '+((ms+cs)||'0');
+   return{T,hit,rows:[['Equation',eq],['The line',p.m>0?'rises':p.m<0?'falls':'is flat'],['Crosses the y-axis at',String(p.c)],['Crosses the x-axis at',p.m===0?'never':fmt(-p.c/p.m,2)],['Target points on the line',n+' of 3']],key:{label:'Targets hit',value:n,unit:'of 3',d:0},verdict:n===3?'All three target points are on your line':'Adjust m and c to reach all three targets'}},
+  draw(c,p,r,t){const S=22,ox=320,oy=176,pr=Math.min(1,t*1.5);
+   c.strokeStyle=col('--line');c.lineWidth=1;for(let i=-15;i<=15;i++){c.beginPath();c.moveTo(ox+i*S,0);c.lineTo(ox+i*S,340);c.stroke();c.beginPath();c.moveTo(0,oy-i*S);c.lineTo(640,oy-i*S);c.stroke()}
+   c.strokeStyle=col('--ink');c.lineWidth=2;c.beginPath();c.moveTo(0,oy);c.lineTo(640,oy);c.moveTo(ox,0);c.lineTo(ox,340);c.stroke();
+   c.fillStyle=col('--mute');c.font='13px '+FM;c.textAlign='center';for(let i=-10;i<=10;i+=2){if(i)c.fillText(i,ox+i*S,oy+16)}c.textAlign='right';for(let i=-7;i<=7;i+=1){if(i&&i%2===0)c.fillText(i,ox-5,oy-i*S+4)}
+   c.strokeStyle=col('--violet');c.lineWidth=3.5;c.beginPath();const xe=-15+30*pr;for(let x=-15;x<=xe;x+=0.5){const px=ox+x*S,py=oy-(p.m*x+p.c)*S;x===-15?c.moveTo(px,py):c.lineTo(px,py)}c.stroke();
+   r.T.forEach((q,i)=>{const px=ox+q[0]*S,py=oy-q[1]*S;c.beginPath();c.arc(px,py,8,0,2*PI);if(r.hit[i]){c.fillStyle=col('--teal');c.fill()}else{c.lineWidth=3;c.strokeStyle=col('--orange');c.stroke()}c.fillStyle=col('--ink');c.font='600 14px '+FM;c.textAlign='left';c.fillText('('+q[0]+', '+q[1]+')',px+12,py-8)});
+   c.fillStyle=col('--mute');c.font='17px '+FB;c.textAlign='left';c.fillText(r.rows[0][1],16,24)}}
+
+};
+const MODELS={incline:'Simulation: a = g(sin θ − μ cos θ), g = 9.8 m/s², no air resistance.',pendulum:'Simulation: T = 2π√(L/g) with a small-angle correction. Mass does not appear.',projectile:'Simulation: no air resistance, launched from the ground.',circuit:'Simulation: ideal battery and resistor, I = V / R.',buoyancy:'Simulation: a 1-litre object, Archimedes’ principle.',
+ salt:'Simplified model: table-salt solubility ≈ 35.6 + 0.035 × temperature (g per 100 mL). Dissolving time is illustrative, not measured.',acid:'Simplified model: 25 mL of acid in the flask, strong acid and strong base, ideal mixing, pH = −log[H⁺].',rate:'Simplified model: rate ∝ concentration, doubling about every 10 °C. Animation runs 4× faster than model time.',photo:'Simplified model: bubbles/min = 70 × light × CO₂ × enzyme factors. Real plants vary.',osmosis:'Simplified model: the potato balances at about 1 % salt. Real potatoes vary.',prob:'Simulation: a computer random-number generator flips the coin, so every run differs.',line:'Maths: the line is y = mx + c. Targets are (1, 3), (3, 7) and (−1, −1).'};
+const SUBJ={incline:'Physics',pendulum:'Physics',projectile:'Physics',circuit:'Physics',buoyancy:'Physics'};
+Object.keys(LABS).forEach(k=>{LABS[k].model=MODELS[k];if(SUBJ[k])LABS[k].subject=SUBJ[k]});
+
+const FB="'Figtree',system-ui,sans-serif", FM="'JetBrains Mono',ui-monospace,monospace";
+let _cs=null,_csT=0;
+function col(n){const now=performance.now();if(!_cs||now-_csT>400){_cs={};_csT=now}if(!_cs[n])_cs[n]=css(n);return _cs[n]}
+new MutationObserver(()=>{_cs=null}).observe(document.documentElement,{attributes:true});
+matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change',()=>{_cs=null});
+
+function mountLab(el,o){
+  const lab=LABS[o.lab],p={};lab.params.forEach(q=>p[q.k]=(o.preset&&o.preset[q.k]!=null)?o.preset[q.k]:q.v);
+  const trials=o.trials||[];let t0=performance.now(),r=lab.calc(p),alive=true;
+  el.innerHTML='<div class="lab"><div><canvas width="1280" height="680" role="img" aria-label="'+esc(lab.name)+' simulation"></canvas><p class="note" style="margin-top:8px;font-size:13px">'+esc(lab.model||'')+'</p></div><div>'+
+   lab.params.map(q=>'<div class="ctrl"><div class="row"><label for="'+o.id+'-'+q.k+'">'+q.l+'</label><output id="'+o.id+'-'+q.k+'-o"></output></div><input type="range" id="'+o.id+'-'+q.k+'" min="'+q.min+'" max="'+q.max+'" step="'+q.step+'" value="'+p[q.k]+'"'+(o.locked?' disabled':'')+'></div>').join('')+
+   '<dl class="readout"></dl><div class="verdict"></div><div class="actions"><button class="btn sm" data-a="run">Run again</button>'+(o.locked?'':'<button class="btn sm primary" data-a="rec">Record trial</button>')+'</div></div></div>'+
+   (o.locked?'':'<div class="tablewrap"><table><thead><tr><th>#</th>'+lab.params.map(q=>'<th>'+q.l+'</th>').join('')+'<th>'+lab.calc(p).key.label+'</th><th>Result</th></tr></thead><tbody class="tb"></tbody></table></div>');
+  const cv=$('canvas',el),ctx=cv.getContext('2d');ctx.scale(2,2);
+  function upd(){r=lab.calc(p);lab.params.forEach(q=>{$('#'+o.id+'-'+q.k+'-o',el).textContent=p[q.k]+(q.u?' '+q.u:'')});
+    $('.readout',el).innerHTML=r.rows.map(x=>'<div><dt>'+x[0]+'</dt><dd>'+x[1]+'</dd></div>').join('');$('.verdict',el).textContent=r.verdict}
+  function drawLog(){const tb=$('.tb',el);if(!tb)return;tb.innerHTML=trials.length?trials.map(x=>'<tr><td class="num">'+x.n+'</td>'+lab.params.map(q=>'<td class="num">'+x.p[q.k]+'</td>').join('')+'<td class="num">'+fmt(x.key.value,x.key.d)+' '+x.key.unit+'</td><td>'+esc(x.verdict)+'</td></tr>').join(''):'<tr><td colspan="'+(lab.params.length+3)+'" style="color:var(--mute)">No trials yet. Change a variable, watch the result, then record a trial.</td></tr>'}
+  function frame(now){if(!alive||!el.isConnected){alive=false;return}
+    const t=o.freeze?0:(now-t0)/1000;ctx.clearRect(0,0,640,340);ctx.fillStyle=col('--canvas');ctx.fillRect(0,0,640,340);lab.draw(ctx,p,r,t);requestAnimationFrame(frame)}
+  el.addEventListener('input',e=>{const q=lab.params.find(x=>x.k===e.target.id.replace(o.id+'-',''));if(!q)return;p[q.k]=parseFloat(e.target.value);t0=performance.now();upd();o.onChange&&o.onChange(p)});
+  el.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b)return;
+    if(b.dataset.a==='run'){if(lab.stochastic)upd();t0=performance.now()}
+    if(b.dataset.a==='rec'){const tr={n:trials.length+1,p:Object.assign({},p),key:r.key,verdict:r.verdict,slides:r.slides,lab:o.lab};trials.push(tr);drawLog();t0=performance.now();
+      logAct('Trial in '+lab.name+': '+tr.key.label.toLowerCase()+' '+fmt(tr.key.value,tr.key.d)+(tr.key.unit?' '+tr.key.unit:''));prog.nt++;prog.sc[lab.subject]=(prog.sc[lab.subject]||0)+1;addPts(5,'trial recorded');award('first');if(!prog.subs.includes(lab.subject)){prog.subs.push(lab.subject);saveProg()}if(prog.subs.length>=4)award('allround');const today=new Date().toISOString().slice(0,10);if(prog.day.d!==today)prog.day={d:today,n:0};prog.day.n++;saveProg();if(prog.day.n===5){addPts(15,'daily goal reached');award('goal')}
+      if(!prog.labs.includes(o.lab)){prog.labs.push(o.lab);saveProg()}
+      if(prog.labs.length>=3)award('explorer');
+      o.onTrial&&o.onTrial(tr,trials)}});
+  upd();drawLog();requestAnimationFrame(frame);
+  return{p,trials,set(patch){Object.assign(p,patch);lab.params.forEach(q=>{const i=$('#'+o.id+'-'+q.k,el);if(i)i.value=p[q.k]});t0=performance.now();upd()},stop(){alive=false}};
+}
+
+/* ---------- experiment content ---------- */
+const TEXT=[
+ {id:'t-incline',title:'Friction on an inclined plane',lab:'incline',meta:'Physics · Forces · Class 9',kw:['friction','incline','ramp','slope','block','sliding'],
+  explain:['When a block sits on a ramp, gravity pulls it down the slope. Friction between the block and the surface pulls back up the slope. If the pull down is bigger than the maximum friction, the block slides.','The block starts to slide when tan(angle) is bigger than μ, the friction coefficient. A rough surface has a large μ. A greased surface has a small μ.','Surprise: the mass does not change whether it slides or how fast. Both the pull and the friction grow with mass, so it cancels out. Try it in the lab.'],
+  materials:['Ramp with adjustable angle','Wooden block','Protractor','Different surfaces (sandpaper, glossy paper)'],
+  procedure:['Set the ramp to a small angle and place the block at the top.','Raise the angle slowly until the block just starts to slide. Note that angle.','Change the surface (change μ) and repeat. Rougher surfaces need a steeper ramp.','Change only the mass and repeat. Notice that the sliding angle stays the same.','Record each result in a table and compare.'],
+  preset:{angle:25,mu:0.3,mass:1},
+  demo:[{say:'A block on a flat ramp does not move. Friction holds it.',set:{angle:5,mu:0.4,mass:1}},{say:'We raise the angle. The pull down the slope grows.',set:{angle:18,mu:0.4,mass:1}},{say:'Past about 22° (where tan angle is bigger than μ = 0.4) the block starts to slide.',set:{angle:30,mu:0.4,mass:1}},{say:'Now a smoother surface, μ = 0.1. The same angle gives a much faster slide.',set:{angle:30,mu:0.1,mass:1}},{say:'Doubling the mass does not change the acceleration.',set:{angle:30,mu:0.1,mass:3}}]},
+ {id:'t-pendulum',title:'Time period of a simple pendulum',lab:'pendulum',meta:'Physics · Oscillations · Class 11',kw:['pendulum','period','swing','oscillation','length'],
+  explain:['A simple pendulum is a small heavy bob on a light string. The time for one full swing is the time period T.','For small angles T = 2π √(L / g). So the period depends on the length L and on gravity g. It does not depend on the mass of the bob, and hardly on the starting angle when that angle is small.','To make the period twice as long you need a string four times as long.'],
+  materials:['Thread or string','Metal bob','Stand with clamp','Stopwatch','Protractor'],
+  procedure:['Hang the bob from the stand and measure the string length.','Pull the bob to a small angle and release it.','Time 10 full swings and divide by 10 to get T.','Change only the length and repeat.','Change only the mass and repeat. Compare your results.'],
+  preset:{len:1,amp:15,mass:0.5},
+  demo:[{say:'A 1 m pendulum takes about 2 seconds per swing.',set:{len:1,amp:15,mass:0.5}},{say:'Shorten the string to 0.25 m. The swing is twice as fast.',set:{len:0.25,amp:15,mass:0.5}},{say:'Make the bob heavier. The period does not change.',set:{len:0.25,amp:15,mass:1.8}},{say:'A longer string, 2 m, swings slowly.',set:{len:2,amp:15,mass:1.8}}]},
+ {id:'t-projectile',title:'Range of a projectile',lab:'projectile',meta:'Physics · Motion · Class 11',kw:['projectile','range','throw','angle','trajectory'],
+  explain:['A thrown ball moves sideways at a steady speed while gravity pulls it down. Together this makes a curved path called a parabola.','The range R = v² sin(2θ) / g. For a given speed the range is greatest at 45°. Angles that add up to 90° (like 30° and 60°) give the same range.','The ball in this lab is launched from the ground and air resistance is ignored.'],
+  materials:['Spring launcher','Small ball','Measuring tape','Protractor'],
+  procedure:['Fix the launch speed and set an angle of 30°.','Launch and measure where the ball lands.','Repeat at 45° and 60°, keeping the speed the same.','Compare the ranges. Which angle goes farthest?','Now change the speed and repeat at 45°.'],
+  preset:{v:20,ang:45},
+  demo:[{say:'At 20 m/s and 45° the ball travels about 41 m.',set:{v:20,ang:45}},{say:'At 30° the range is smaller.',set:{v:20,ang:30}},{say:'At 60° the range matches 30°. The two angles add up to 90°.',set:{v:20,ang:60}},{say:'A faster launch of 30 m/s at 45° goes farthest.',set:{v:30,ang:45}}]},
+ {id:'t-ohm',title:"Ohm's law",lab:'circuit',meta:'Physics · Electricity · Class 10',kw:['ohm','current','voltage','resistance','circuit'],
+  explain:['Ohm’s law says the current through a resistor is the voltage divided by the resistance: I = V / R.','Double the voltage and the current doubles. Double the resistance and the current halves. The power used is P = V × I.','In a real lab a very large current can overheat wires. In a virtual lab you can see this safely.'],
+  materials:['Battery','Resistor','Connecting wires','Ammeter','Lamp'],
+  procedure:['Connect the battery, resistor and ammeter in series.','Read the current at one voltage.','Raise the voltage in steps, keeping the resistance the same. Note the current each time.','Now keep the voltage fixed and change the resistance.','Plot or compare your readings. What pattern do you see?'],
+  preset:{V:6,R:20},
+  demo:[{say:'6 V across 20 Ω gives 0.3 A. The lamp glows dimly.',set:{V:6,R:20}},{say:'Double the voltage. The current doubles.',set:{V:12,R:20}},{say:'Now double the resistance. The current halves.',set:{V:12,R:40}},{say:'Very low resistance means a huge current. Real wires would overheat.',set:{V:12,R:2}}]},
+ {id:'t-float',title:'Floating and sinking',lab:'buoyancy',meta:'Physics · Fluids · Class 8',kw:['float','sink','density','buoyancy','archimedes','water'],
+  explain:['An object in a liquid feels an upward force equal to the weight of the liquid it pushes aside. This is Archimedes’ principle.','If the object is less dense than the liquid it floats, with a part under the surface equal to the ratio of the two densities. If it is denser, it sinks.','Salty water is denser than fresh water, so more things float in it.'],
+  materials:['Tank of water','Test objects of different materials','Salt','Spring balance'],
+  procedure:['Fill the tank with water (density 1000 kg/m³).','Place an object of low density in it. Does it float? How much is under the surface?','Try an object denser than water. It should sink.','Increase the liquid density (add salt) and test the same object again.','Record which objects float in which liquid.'],
+  preset:{od:600,ld:1000},
+  demo:[{say:'Wood (600 kg/m³) in water floats, with 60% under the surface.',set:{od:600,ld:1000}},{say:'A denser object (1500 kg/m³) sinks.',set:{od:1500,ld:1000}},{say:'In salty water (1300 kg/m³) the same object still sinks, but one at 1100 now floats.',set:{od:1100,ld:1300}},{say:'In oil (800 kg/m³) the wood floats lower.',set:{od:600,ld:800}}]},
+ {id:'t-salt',title:'Dissolving salt in water',lab:'salt',meta:'Chemistry · Solutions · Class 8',kw:['salt','dissolve','solution','solubility','saturated'],
+  explain:['When salt (the solute) goes into water (the solvent), the salt crystals break up into tiny particles that spread through the water. The mixture is called a solution.','Water can only hold so much salt. When it holds the most it can, the solution is saturated and extra salt stays as crystals at the bottom. At room temperature about 36 g of table salt dissolves in 100 mL of water.','Hotter water and stirring make salt dissolve faster. For table salt they change the amount that can dissolve only slightly, which surprises many students.'],
+  safety:'Real experiments: use clean water and equipment, and never taste anything made in a lab.',
+  materials:['Beaker','Water','Table salt','Thermometer','Balance','Stirring rod'],
+  procedure:['Measure 100 mL of water into the beaker and note its temperature.','Add 20 g of salt and stir. Time how long it takes to dissolve.','Repeat with warmer water, changing only the temperature.','Repeat with no stirring, changing only the stirring.','Keep adding salt in a new trial until some stays at the bottom. That is the saturation point.'],
+  preset:{temp:20,salt:20,stir:1},
+  demo:[{say:'20 g of salt in 20 °C water dissolves in a few seconds with stirring.',set:{temp:20,salt:20,stir:1}},{say:'With no stirring it takes much longer.',set:{temp:20,salt:20,stir:0}},{say:'Hot water (80 °C) speeds it up.',set:{temp:80,salt:20,stir:0}},{say:'60 g is too much. About 24 g stays undissolved. The solution is saturated.',set:{temp:20,salt:60,stir:1}}]},
+ {id:'t-acid',title:'Acid–base neutralisation (titration)',lab:'acid',meta:'Chemistry · Acids and bases · Class 10',kw:['acid','base','ph','titration','neutralisation','indicator'],
+  explain:['An acid has a pH below 7 and a base has a pH above 7. When they mix they neutralise each other and make a salt and water.','In a titration you add base slowly from a burette to a measured amount of acid. Near the equivalence point, where the moles of acid and base are equal, the pH jumps quickly from acidic to alkaline.','Phenolphthalein indicator is colourless in acid and turns pink above about pH 8.2, so a pink flash shows the endpoint has been passed.'],
+  safety:'Real acids and bases can burn skin and eyes. Real titrations need goggles, gloves and a teacher. This lab uses dilute solutions in a simulation only.',
+  materials:['Burette','Conical flask','Dilute acid (25 mL)','Dilute base','Phenolphthalein indicator'],
+  procedure:['The flask holds 25 mL of acid. Predict how much base will neutralise it.','Add base a little at a time and watch the pH.','Slow down as the pH starts to climb quickly.','Note the volume where the pH is about 7. That is the equivalence point.','Change the acid or base strength and see how the volume changes.'],
+  preset:{Vb:10,Ca:0.1,Cb:0.1},
+  demo:[{say:'No base yet: the flask is acidic, pH 1.',set:{Vb:0,Ca:0.1,Cb:0.1}},{say:'10 mL of base: the acid is partly neutralised.',set:{Vb:10,Ca:0.1,Cb:0.1}},{say:'25 mL is the equivalence point. pH is 7.',set:{Vb:25,Ca:0.1,Cb:0.1}},{say:'A little more base and the pH shoots up. The indicator turns pink.',set:{Vb:27,Ca:0.1,Cb:0.1}}]},
+ {id:'t-rate',title:'Rate of reaction',lab:'rate',meta:'Chemistry · Reactions · Class 11',kw:['rate','reaction','collision','temperature','concentration'],
+  explain:['Particles must collide with enough energy to react. The more often and the harder they collide, the faster the reaction.','A higher concentration puts more particles in the same space, so collisions are more frequent. A higher temperature makes particles move faster, so collisions are more frequent and more energetic.','A common rule of thumb is that the rate roughly doubles for every 10 °C rise. This lab uses that simplified rule.'],
+  safety:'Real reactions can release heat or gas. Only do them with a teacher and the right safety equipment.',
+  materials:['Reaction vessel','Thermometer','Stopwatch','Reactant solution'],
+  procedure:['Set a starting temperature and concentration. Note the time to finish.','Change only the temperature and repeat.','Change only the concentration and repeat.','Compare which change had the bigger effect.','Explain your results using particles and collisions.'],
+  preset:{T:20,C:1},
+  demo:[{say:'At 20 °C and 1 M the reaction finishes in about 40 model seconds.',set:{T:20,C:1}},{say:'Double the concentration. It takes half the time.',set:{T:20,C:2}},{say:'Raise the temperature to 40 °C. The particles move faster and it finishes much sooner.',set:{T:40,C:1}},{say:'Hot and concentrated is very fast.',set:{T:70,C:2}}]},
+ {id:'t-photo',title:'Photosynthesis in pondweed',lab:'photo',meta:'Biology · Plants · Class 10',kw:['photosynthesis','plant','light','oxygen','pondweed'],
+  explain:['Plants make food using light: carbon dioxide + water → glucose + oxygen. Pondweed releases the oxygen as bubbles, so counting bubbles per minute is a simple way to compare photosynthesis rates.','Three things can limit the rate: light, carbon dioxide and temperature. Whichever is in shortest supply is the limiting factor, and increasing the others does not help.','Photosynthesis depends on enzymes. Above about 40 °C the enzymes start to break down and the rate drops quickly.'],
+  safety:'Real lamps get hot. Keep water and electrical equipment apart.',
+  materials:['Pondweed','Beaker of water','Lamp','Ruler','Sodium hydrogencarbonate (CO₂ source)'],
+  procedure:['Place the pondweed in water with a little hydrogencarbonate.','Put the lamp 30 cm away and count bubbles for one minute.','Move the lamp closer or farther, changing only the distance.','Change only the CO₂ and repeat.','Change only the temperature and repeat. Note which factor limits the rate.'],
+  preset:{d:30,co2:0.5,T:25},
+  demo:[{say:'At 30 cm the weed releases about 20 bubbles a minute.',set:{d:30,co2:0.5,T:25}},{say:'Move the lamp to 10 cm. More light, more bubbles.',set:{d:10,co2:0.5,T:25}},{say:'Now carbon dioxide is the limiting factor. Adding more CO₂ helps.',set:{d:10,co2:1.5,T:25}},{say:'At 44 °C the enzymes are damaged and the bubbles almost stop.',set:{d:10,co2:1.5,T:44}}]},
+ {id:'t-osmosis',title:'Osmosis in potato cylinders',lab:'osmosis',meta:'Biology · Cells · Class 9',kw:['osmosis','potato','cell','water','membrane'],
+  explain:['Osmosis is the movement of water through a partially permeable membrane from a weaker solution to a stronger one.','A potato cylinder in pure water gains water and mass because the cells are saltier than the water. In a strong salt solution it loses water and mass. At one strength it neither gains nor loses. That is where the solutions are balanced.','Cells that gain water become firm (turgid). Cells that lose water become soft (flaccid).'],
+  safety:'Handle knives and cutters carefully when preparing real potato cylinders.',
+  materials:['Potato cylinders of equal size','Beakers','Salt solutions of different strengths','Balance','Ruler'],
+  procedure:['Weigh several potato cylinders and note their mass.','Place one in pure water and others in stronger salt solutions.','Leave them for the same time.','Dry and weigh them again. Work out the percentage change.','Find the strength where the mass does not change.'],
+  preset:{c:0,tm:60},
+  demo:[{say:'In pure water the potato swells and gains mass.',set:{c:0,tm:60}},{say:'At about 1 % salt there is almost no change. The solutions are balanced.',set:{c:1,tm:60}},{say:'In 5 % salt the potato loses water and shrinks.',set:{c:5,tm:60}},{say:'In 10 % salt it shrinks more.',set:{c:10,tm:120}}]},
+ {id:'t-prob',title:'Coin flips and probability',lab:'prob',meta:'Maths · Probability · Class 9',kw:['probability','coin','chance','random'],
+  explain:['A fair coin has a 50 % chance of heads. That does not mean exactly half of any set of flips will be heads.','With only a few flips the result can be far from 50 %. With many flips the share of heads settles close to the true chance. This is called the law of large numbers.','Each run uses a computer random-number generator, so each run gives different results. That is why scientists repeat experiments.'],
+  materials:['Coin','Tally sheet','Calculator'],
+  procedure:['Predict how many heads you expect in 20 flips.','Run 20 flips and note the percentage of heads.','Run 1000 flips and note it again.','Repeat each a few times. Which results vary more?','Change the chance of heads to make a biased coin and compare.'],
+  preset:{n:50,p:0.5},
+  demo:[{say:'20 flips: the line wobbles a lot.',set:{n:20,p:0.5}},{say:'200 flips: it settles closer to 50 %.',set:{n:200,p:0.5}},{say:'2000 flips: very close to 50 %.',set:{n:2000,p:0.5}},{say:'A biased coin (70 % heads) settles near 70 %.',set:{n:1000,p:0.7}}]},
+ {id:'t-line',title:'Straight-line graphs: y = mx + c',lab:'line',meta:'Maths · Algebra · Class 9',kw:['graph','line','slope','intercept','linear','algebra'],
+  explain:['The equation y = mx + c draws a straight line. The slope m tells you how steeply the line rises (or falls) for each step to the right. The number c is where the line crosses the y-axis.','A bigger positive m makes a steeper rise. A negative m makes the line fall. Changing c slides the line up or down without changing its steepness.','Challenge: three target points are on the grid. Find the one line that passes through all three.'],
+  materials:['Graph paper','Ruler','Pencil'],
+  procedure:['Start with m = 1 and c = 0. Note where the line goes.','Change only m and watch the steepness.','Change only c and watch the line slide.','Look at the three target points. Which m and c go through all of them?','Check with the equation, using the points to test it.'],
+  preset:{m:1,c:0},
+  demo:[{say:'y = x rises one up for each step right.',set:{m:1,c:0}},{say:'Set m = 3: much steeper.',set:{m:3,c:0}},{say:'Set c = 2: the line slides up by 2.',set:{m:3,c:2}},{say:'m = 2 and c = 1 pass through all three target points.',set:{m:2,c:1}}]}
+
+];
+
+const onlyDiff=(trials,key)=>{for(let i=0;i<trials.length;i++)for(let j=i+1;j<trials.length;j++){const a=trials[i].p,b=trials[j].p;if(a[key]!==b[key]&&Object.keys(a).every(k=>k===key||a[k]===b[k]))return true}return false};
+const distinct=(trials,key)=>new Set(trials.map(t=>t.p[key])).size;
+const BEYOND=[
+ {words:['friction','rough','grip','slide','sliding','lubricant','surface','slip'],items:[
+  {title:'Inclined plane and sliding',lab:'incline',preset:{angle:20,mu:0.5,mass:1},idea:'Friction decides whether a block slides. It starts to slide when tan(angle) is bigger than μ.',method:['Pick a friction coefficient.','Raise the angle until the block slides.','Check: does the block slide only when tan(angle) is bigger than μ?'],goal:'Record one trial where the block slides and one where it stays at rest.',test:t=>t.some(x=>x.slides)&&t.some(x=>!x.slides)},
+  {title:'Surface texture comparison',lab:'incline',preset:{angle:30,mu:0.8,mass:1},idea:'Compare surfaces of different roughness at the same angle.',method:['Keep the angle at 30°.','Test a low, medium and high μ.','Compare how fast the block slides on each.'],goal:'Record trials with three different μ values.',test:t=>distinct(t,'mu')>=3},
+  {title:'Effect of a lubricant',lab:'incline',preset:{angle:15,mu:0.6,mass:1},idea:'A lubricant lowers μ. Find how low μ must be for a block to slide on a gentle 15° slope.',method:['Keep the angle at 15°.','Lower μ step by step.','Stop when the block starts to slide.'],goal:'Record a trial at 15° or less where the block slides.',test:t=>t.some(x=>x.slides&&x.p.angle<=15)}]},
+ {words:['gravity','fall','falling','weight','mass','heavy','heavier'],items:[
+  {title:'Does mass change how fast a block slides?',lab:'incline',preset:{angle:35,mu:0.2,mass:1},idea:'Test if a heavier block accelerates faster on the same ramp.',method:['Fix the angle and μ.','Record a trial with 1 kg.','Change only the mass and record again.'],goal:'Record two trials that differ only in mass.',test:t=>onlyDiff(t,'mass')},
+  {title:'Does mass change a pendulum?',lab:'pendulum',preset:{len:1,amp:15,mass:0.3},idea:'Does a heavier bob swing faster or slower?',method:['Fix length and starting angle.','Record a trial with a light bob.','Change only the mass and record again.'],goal:'Record two trials that differ only in bob mass.',test:t=>onlyDiff(t,'mass')},
+  {title:'Launch angle for the longest throw',lab:'projectile',preset:{v:30,ang:20},idea:'Find the angle that sends a ball farthest at a fixed speed.',method:['Keep the speed at 30 m/s.','Try several angles.','Compare the ranges.'],goal:'Record a throw that lands 90 m or farther.',test:t=>t.some(x=>x.key.value>=90)}]},
+ {words:['motion','speed','velocity','acceleration','projectile','throw','distance','kinematics','parabola'],items:[
+  {title:'Launch angle for the longest throw',lab:'projectile',preset:{v:30,ang:20},idea:'Find the angle that sends a ball farthest at a fixed speed.',method:['Keep the speed at 30 m/s.','Try several angles.','Compare the ranges.'],goal:'Record a throw that lands 90 m or farther.',test:t=>t.some(x=>x.key.value>=90)},
+  {title:'Same range, two angles',lab:'projectile',preset:{v:20,ang:30},idea:'Two angles that add up to 90° give the same range. Check it.',method:['Record a throw at 30°.','Record a throw at 60° with the same speed.','Compare the ranges.'],goal:'Record trials at 30° and 60° with the same speed.',test:t=>t.some(x=>x.p.ang===30)&&t.some(x=>x.p.ang===60)},
+  {title:'How acceleration depends on the slope',lab:'incline',preset:{angle:20,mu:0.1,mass:1},idea:'A steeper ramp gives a bigger acceleration. Measure by how much.',method:['Fix μ at 0.1.','Record at 20°, 35° and 50°.','Compare accelerations.'],goal:'Record trials at three different angles.',test:t=>distinct(t,'angle')>=3}]},
+ {words:['energy','kinetic','potential','work','conservation'],items:[
+  {title:'Starting angle and swing time',lab:'pendulum',preset:{len:1,amp:10,mass:0.5},idea:'Does a bigger swing take longer? Compare a small and a large starting angle.',method:['Fix the length.','Record at 10°.','Change only the starting angle and record again.'],goal:'Record two trials that differ only in starting angle.',test:t=>onlyDiff(t,'amp')},
+  {title:'Launch speed and range',lab:'projectile',preset:{v:10,ang:45},idea:'How does range grow as launch speed grows?',method:['Fix the angle at 45°.','Record at 10 m/s.','Change only the speed and record again.'],goal:'Record two trials that differ only in speed.',test:t=>onlyDiff(t,'v')}]},
+ {words:['wave','waves','oscillation','vibration','period','frequency','swing','pendulum','periodic','time'],items:[
+  {title:'Length and period',lab:'pendulum',preset:{len:0.5,amp:15,mass:0.5},idea:'How does the time period depend on the string length?',method:['Fix mass and angle.','Record at one length.','Change only the length and record again.'],goal:'Record two trials that differ only in length.',test:t=>onlyDiff(t,'len')},
+  {title:'Build a one-second pendulum',lab:'pendulum',preset:{len:0.5,amp:10,mass:0.5},idea:'A pendulum with a one-second period is useful for clocks. Find its length.',method:['Guess a length.','Check the period.','Adjust until it is close to 1.00 s.'],goal:'Record a trial with a period between 0.97 s and 1.03 s.',test:t=>t.some(x=>x.key.value>=0.97&&x.key.value<=1.03)},
+  {title:'Starting angle and swing time',lab:'pendulum',preset:{len:1,amp:10,mass:0.5},idea:'Does a bigger swing take longer?',method:['Fix the length.','Record at 10°.','Change only the starting angle and record again.'],goal:'Record two trials that differ only in starting angle.',test:t=>onlyDiff(t,'amp')}]},
+ {words:['electricity','electric','current','voltage','resistance','circuit','ohm','battery','power','bulb','lamp'],items:[
+  {title:'Voltage and current',lab:'circuit',preset:{V:3,R:20},idea:'How does the current change when the voltage changes?',method:['Fix the resistance.','Record at one voltage.','Change only the voltage and record again.'],goal:'Record two trials that differ only in voltage.',test:t=>onlyDiff(t,'V')},
+  {title:'Resistance and brightness',lab:'circuit',preset:{V:9,R:10},idea:'A lamp is brighter with more current. How does resistance affect that?',method:['Fix the voltage at 9 V.','Record at one resistance.','Change only the resistance and record again.'],goal:'Record two trials that differ only in resistance.',test:t=>onlyDiff(t,'R')},
+  {title:'Why circuits need fuses',lab:'circuit',preset:{V:12,R:10},idea:'Very low resistance gives a very large current. See where it becomes unsafe.',method:['Set the voltage to 12 V.','Lower the resistance step by step.','Watch the safety line.'],goal:'Record a trial that triggers the overheating warning (current above 5 A).',test:t=>t.some(x=>x.key.value>5)}]},
+ {words:['density','float','sink','buoyancy','buoyant','pressure','water','liquid','fluid','archimedes','oil','salt'],items:[
+  {title:'Which materials float?',lab:'buoyancy',preset:{od:600,ld:1000},idea:'Compare objects of different density in water.',method:['Keep the liquid at 1000 kg/m³.','Try a light and a dense object.','Compare how much sits under the surface.'],goal:'Record one trial that floats and one that sinks.',test:t=>t.some(x=>x.verdict.includes('floats'))&&t.some(x=>x.verdict.includes('sinks'))},
+  {title:'Floating in salty water',lab:'buoyancy',preset:{od:1100,ld:1000},idea:'An object that sinks in fresh water can float in salty water.',method:['Test a 1100 kg/m³ object in water.','Raise the liquid density to 1200.','Test again.'],goal:'Record the 1100 kg/m³ object both sinking and floating.',test:t=>t.some(x=>x.p.od===1100&&x.verdict.includes('sinks'))&&t.some(x=>x.p.od===1100&&x.verdict.includes('floats'))},
+  {title:'Oil versus water',lab:'buoyancy',preset:{od:700,ld:800},idea:'Oil is less dense than water. Check how that changes what floats.',method:['Set the liquid to oil, around 800 kg/m³.','Test an object of 700 kg/m³.','Compare with water.'],goal:'Record a trial in a liquid of 800 kg/m³ or less.',test:t=>t.some(x=>x.p.ld<=800)}]},
+ {words:['dissolve','dissolving','solution','solubility','salt','saturated','solvent','solute','stirring','sugar'],items:[
+  {title:'Does hotter water dissolve salt faster?',lab:'salt',preset:{temp:20,salt:20,stir:1},idea:'Test how water temperature changes the time salt takes to dissolve.',method:['Fix the amount of salt and the stirring.','Record the time at 20 °C.','Change only the temperature and record again.'],goal:'Record two trials that differ only in temperature.',test:t=>onlyDiff(t,'temp')},
+  {title:'Find the saturation point',lab:'salt',preset:{temp:20,salt:60,stir:1},idea:'Water can only hold so much salt. Find when extra salt stays undissolved.',method:['Start with a small amount of salt.','Add more in new trials.','Look for the verdict that says the water is saturated.'],goal:'Record a trial where some salt stays undissolved.',test:t=>t.some(x=>x.verdict.indexOf('Saturated')===0)},
+  {title:'Does stirring help?',lab:'salt',preset:{temp:20,salt:30,stir:0},idea:'Stirring moves particles around. Does it change how fast salt dissolves?',method:['Fix temperature and amount.','Record with no stirring.','Change only the stirring and record again.'],goal:'Record two trials that differ only in stirring.',test:t=>onlyDiff(t,'stir')}]},
+ {words:['acid','acids','base','bases','alkali','ph','neutralisation','neutralization','titration','indicator','vinegar'],items:[
+  {title:'Find the equivalence point',lab:'acid',preset:{Vb:10,Ca:0.1,Cb:0.1},idea:'Add base until the acid is exactly neutralised.',method:['Start with a small volume of base.','Add more and watch the pH curve.','Stop when the pH is close to 7.'],goal:'Record a trial with a pH between 6.5 and 7.5.',test:t=>t.some(x=>x.key.value>=6.5&&x.key.value<=7.5)},
+  {title:'Stronger acid needs more base',lab:'acid',preset:{Vb:20,Ca:0.1,Cb:0.1},idea:'Compare how the acid strength changes the pH after adding the same base.',method:['Fix the base volume and strength.','Record with a weaker acid.','Change only the acid strength and record again.'],goal:'Record two trials that differ only in acid strength.',test:t=>onlyDiff(t,'Ca')},
+  {title:'Overshooting the endpoint',lab:'acid',preset:{Vb:30,Ca:0.1,Cb:0.1},idea:'Adding too much base makes the solution alkaline and the indicator pink.',method:['Pass the equivalence point.','Watch the pH rise.','Notice the indicator colour.'],goal:'Record a trial with a pH above 10.',test:t=>t.some(x=>x.key.value>10)}]},
+ {words:['reaction','reactions','rate','collision','catalyst','particles','concentration','temperature','chemical'],items:[
+  {title:'Temperature and reaction rate',lab:'rate',preset:{T:20,C:1},idea:'Hotter particles move faster and collide more often.',method:['Fix the concentration.','Record the time at 20 °C.','Change only the temperature and record again.'],goal:'Record two trials that differ only in temperature.',test:t=>onlyDiff(t,'T')},
+  {title:'Concentration and reaction rate',lab:'rate',preset:{T:30,C:0.4},idea:'More particles in the same space means more collisions.',method:['Fix the temperature.','Record at a low concentration.','Change only the concentration and record again.'],goal:'Record two trials that differ only in concentration.',test:t=>onlyDiff(t,'C')},
+  {title:'A very fast reaction',lab:'rate',preset:{T:30,C:1},idea:'Combine heat and concentration to make a reaction finish quickly.',method:['Raise the temperature.','Raise the concentration.','Check the time to finish.'],goal:'Record a trial that finishes in under 5 s.',test:t=>t.some(x=>x.key.value<5)}]},
+ {words:['photosynthesis','plant','plants','light','leaf','oxygen','chlorophyll','pondweed','carbon','growth','biology'],items:[
+  {title:'Light distance and oxygen output',lab:'photo',preset:{d:30,co2:0.5,T:25},idea:'Light is energy for photosynthesis. How does the lamp distance change the bubbles?',method:['Fix CO₂ and temperature.','Record at 30 cm.','Change only the distance and record again.'],goal:'Record two trials that differ only in lamp distance.',test:t=>onlyDiff(t,'d')},
+  {title:'Carbon dioxide and photosynthesis',lab:'photo',preset:{d:20,co2:0.2,T:25},idea:'Plants need carbon dioxide too. Test how it limits the rate.',method:['Fix light and temperature.','Record with a little CO₂.','Change only the CO₂ and record again.'],goal:'Record two trials that differ only in CO₂.',test:t=>onlyDiff(t,'co2')},
+  {title:'Too hot for the enzymes',lab:'photo',preset:{d:20,co2:1,T:30},idea:'Enzymes in the leaf stop working when it is too hot.',method:['Start at 30 °C.','Raise the temperature step by step.','Watch the bubbles drop.'],goal:'Record a trial at 42 °C or hotter.',test:t=>t.some(x=>x.p.T>=42)}]},
+ {words:['osmosis','cell','cells','diffusion','potato','membrane','turgid','plasmolysis','water','salt'],items:[
+  {title:'Potato in salt solutions',lab:'osmosis',preset:{c:0,tm:60},idea:'Compare what happens to a potato in pure water and strong salt solution.',method:['Record in pure water.','Record in a strong solution.','Compare the mass change.'],goal:'Record one trial where the potato gains mass and one where it loses mass.',test:t=>t.some(x=>x.key.value>0.3)&&t.some(x=>x.key.value<-0.3)},
+  {title:'Find the balance point',lab:'osmosis',preset:{c:2,tm:60},idea:'At one strength the potato neither gains nor loses water.',method:['Try strengths between 0 and 3 %.','Look for almost no mass change.','Note the strength.'],goal:'Record a trial where the mass change is within 0.5 %.',test:t=>t.some(x=>Math.abs(x.key.value)<=0.5)},
+  {title:'Does time matter?',lab:'osmosis',preset:{c:0,tm:20},idea:'Osmosis takes time. Compare a short and a long soak.',method:['Fix the strength.','Record a short time.','Change only the time and record again.'],goal:'Record two trials that differ only in time.',test:t=>onlyDiff(t,'tm')}]},
+ {words:['probability','chance','coin','dice','random','statistics','average','fair','flip','toss','maths','math'],items:[
+  {title:'Few flips versus many flips',lab:'prob',preset:{n:20,p:0.5},idea:'Small samples are noisy. Large samples settle near the true chance.',method:['Run 20 flips.','Run 1000 flips.','Compare the gaps from 50 %.'],goal:'Record one trial with 20 flips or fewer and one with 1000 flips or more.',test:t=>t.some(x=>x.p.n<=20)&&t.some(x=>x.p.n>=1000)},
+  {title:'A biased coin',lab:'prob',preset:{n:500,p:0.7},idea:'A coin that favours heads settles at a different share.',method:['Fix the number of flips.','Record with 70 % chance.','Change only the chance and record again.'],goal:'Record two trials that differ only in the chance of heads.',test:t=>onlyDiff(t,'p')},
+  {title:'Is a fair coin really 50-50?',lab:'prob',preset:{n:1000,p:0.5},idea:'With many flips a fair coin should land very close to 50 %.',method:['Set 1000 or more flips.','Keep the chance at 0.5.','Check the gap.'],goal:'Record a trial of 1000+ flips on a fair coin that is close to 50 %.',test:t=>t.some(x=>x.p.n>=1000&&x.p.p===0.5&&x.verdict.indexOf('Close')===0)}]},
+ {words:['graph','graphs','line','slope','gradient','linear','equation','algebra','intercept','function','straight'],items:[
+  {title:'Hit all three targets',lab:'line',preset:{m:1,c:0},idea:'Find the one line y = mx + c that passes through all three target points.',method:['Look at where the points are.','Adjust the slope.','Adjust the intercept.'],goal:'Record a trial where all three target points are on the line.',test:t=>t.some(x=>x.key.value>=3)},
+  {title:'What does the slope do?',lab:'line',preset:{m:1,c:1},idea:'Slope controls how steep the line is.',method:['Fix c.','Record one slope.','Change only m and record again.'],goal:'Record two trials that differ only in slope.',test:t=>onlyDiff(t,'m')},
+  {title:'What does the intercept do?',lab:'line',preset:{m:2,c:0},idea:'The intercept slides the line up or down.',method:['Fix m.','Record one intercept.','Change only c and record again.'],goal:'Record two trials that differ only in intercept.',test:t=>onlyDiff(t,'c')}]}
+
+];
+
+/* ---------- optional Claude help (falls back to built-in rules) ---------- */
+async function askClaudeJSON(prompt){
+  try{const s=await window.claude?.use?.('sample');if(!s)return null;return await s.json(prompt,{modelTier:'quick'})}catch(e){return null}
+}
+async function askClaudeText(prompt){
+  try{const s=await window.claude?.use?.('sample');if(!s)return null;const r=await s(prompt,{modelTier:'quick'});return r.text}catch(e){return null}
+}
+const LABLIST=Object.keys(LABS).map(k=>k+' ('+LABS[k].params.map(p=>p.k+' '+p.min+'-'+p.max).join(', ')+')').join('; ');
+
+/* ---------- Module 1 ---------- */
+const S1={sel:TEXT[0].id,tab:'learn',q:'',subj:'All',trials:{}};
+let lab1=null;
+function m1(){
+  const app=$('#app'),qq=S1.q.trim().toLowerCase();
+  const list=TEXT.filter(e=>(S1.subj==='All'||LABS[e.lab].subject===S1.subj)&&(!qq||(e.title+' '+e.kw.join(' ')+' '+e.meta).toLowerCase().includes(qq)));
+  const ex=TEXT.find(e=>e.id===S1.sel)||TEXT[0];
+  app.innerHTML='<div class="two"><div><div class="field"><label for="q1">Search an experiment</label><input type="search" id="q1" placeholder="Try: pendulum, salt, osmosis, coin" value="'+esc(S1.q)+'"></div>'+
+   '<div class="chips" id="subj" style="margin-top:10px">'+['All','Physics','Chemistry','Biology','Maths'].map(s=>'<button class="chip" data-s="'+s+'" aria-pressed="'+(S1.subj===s)+'">'+s+'</button>').join('')+'</div>'+
+   '<div class="list" id="l1">'+(list.length?list.map(e=>'<button class="item" data-id="'+e.id+'" aria-current="'+(e.id===ex.id)+'"><b>'+e.title+(prog.done.includes(e.id)?' ✓':'')+'</b><small>'+e.meta+'</small></button>').join(''):'<p class="note">No experiment matches. Try another word or subject.</p>')+'</div></div>'+
+   '<div><h3 style="margin-bottom:4px">'+ex.title+'</h3><p class="eyebrow" style="margin-bottom:12px">'+ex.meta+'</p><div class="sub" role="tablist">'+
+   [['learn','Explanation'],['proc','Procedure'],['demo','Watch demo'],['lab','Virtual lab']].map(t=>'<button role="tab" data-tab="'+t[0]+'" aria-selected="'+(S1.tab===t[0])+'">'+t[1]+'</button>').join('')+'</div><div id="m1body"></div></div></div>';
+  $('#q1').addEventListener('input',e=>{S1.q=e.target.value;const pos=e.target.selectionStart;m1();const q=$('#q1');q.focus();q.setSelectionRange(pos,pos)});
+  $('#subj').addEventListener('click',e=>{const b=e.target.closest('[data-s]');if(b){S1.subj=b.dataset.s;m1()}});
+  $('#l1').addEventListener('click',e=>{const b=e.target.closest('.item');if(b){S1.sel=b.dataset.id;m1()}});
+  $$('.sub button',app).forEach(b=>b.onclick=()=>{S1.tab=b.dataset.tab;m1()});
+  const body=$('#m1body');lab1&&lab1.stop();lab1=null;
+  if(S1.tab==='learn')body.innerHTML='<div class="prose">'+ex.explain.map(p=>'<p>'+esc(p)+'</p>').join('')+'<h4>Materials</h4><div class="chips">'+ex.materials.map(m=>'<span class="chip plain">'+esc(m)+'</span>').join('')+'</div>'+(ex.safety?'<h4>Safety</h4><p>'+esc(ex.safety)+'</p>':'')+'</div>';
+  else if(S1.tab==='proc')body.innerHTML='<ol class="steps">'+ex.procedure.map(s=>'<li>'+esc(s)+'</li>').join('')+'</ol><div class="actions" style="margin-top:14px"><button class="btn primary" id="gotolab">Do it in the virtual lab</button></div>';
+  else if(S1.tab==='demo')runDemo(body,ex);
+  else{S1.trials[ex.id]=S1.trials[ex.id]||[];body.innerHTML='<div class="note" style="margin-bottom:12px"><b>Your turn.</b> Change the sliders, watch what happens, and record trials to compare. Record 3 trials to complete this experiment.</div><div id="labhost"></div>';
+    lab1=mountLab($('#labhost'),{id:'l1',lab:ex.lab,preset:ex.preset,trials:S1.trials[ex.id],onTrial:(tr,all)=>{
+      if(onlyAnyDiff(all))award('fair');
+      if(all.length>=3&&!prog.done.includes(ex.id)){prog.done.push(ex.id);logAct('Completed: '+ex.title);addPts(20,'experiment completed');award('finisher')}}})}
+  const g=$('#gotolab');g&&(g.onclick=()=>{S1.tab='lab';m1()});
+}
+function runDemo(body,ex){
+  body.innerHTML='<div class="caption" id="cap">Press play to watch the experiment being done.</div><div id="labhost"></div><div class="actions" style="margin-top:10px"><button class="btn primary sm" id="play">Play demo</button></div>';
+  const m=mountLab($('#labhost'),{id:'d1',lab:ex.lab,preset:ex.preset,locked:true});lab1=m;
+  let timers=[];$('#play').onclick=()=>{timers.forEach(clearTimeout);timers=[];const cap=$('#cap');
+    ex.demo.forEach((st,i)=>timers.push(setTimeout(()=>{if(!cap.isConnected)return;cap.textContent='Step '+(i+1)+' of '+ex.demo.length+': '+st.say;m.set(st.set)},i*4200)));
+    timers.push(setTimeout(()=>{if(!cap.isConnected)return;cap.textContent='Demo finished. Now try it yourself in the Virtual lab tab.';if(!prog.badges.includes('viewer'))addPts(5,'watched a full demo');award('viewer')},ex.demo.length*4200));}
+}
+
+/* ---------- Module 2 ---------- */
+const S2={q:'',res:null,sel:null,done:{},trials:{},note:'',busy:false};
+let lab2=null;
+function matchConcept(q){
+  const w=q.toLowerCase().split(/[^a-z]+/).filter(Boolean);if(!w.length)return null;
+  let best=null,sc=0;BEYOND.forEach(g=>{const s=g.words.filter(x=>w.includes(x)||w.some(y=>y.length>3&&(x.startsWith(y)||y.startsWith(x)))).length;if(s>sc){sc=s;best=g}});
+  return best&&sc>0?best.items:null;
+}
+function m2(){
+  const app=$('#app');
+  const ex=S2.res&&S2.sel!=null?S2.res[S2.sel]:null;
+  app.innerHTML='<div class="two"><div><form id="f2" class="field"><label for="q2">Enter a concept</label><input type="text" id="q2" placeholder="Try: friction, gravity, density" value="'+esc(S2.q)+'"><button class="btn primary" type="submit"'+(S2.busy?' disabled':'')+'>'+(S2.busy?'Thinking…':'Discover experiments')+'</button></form>'+
+   '<div class="chips" style="margin-top:10px">'+['friction','density','electricity','dissolving','acids','photosynthesis','probability','graphs'].map(c=>'<button class="chip" data-c="'+c+'">'+c+'</button>').join('')+'</div>'+
+   (S2.note?'<p class="note" style="margin-top:12px">'+S2.note+'</p>':'')+
+   '<div class="list" id="l2">'+(S2.res?S2.res.map((e,i)=>'<button class="item" data-i="'+i+'" aria-current="'+(i===S2.sel)+'"><b>'+esc(e.title)+(e.ai?'<span class="ai-tag">Claude</span>':'')+'</b><small>Beyond the textbook · '+LABS[e.lab].name+(S2.done[e.title]?' · done':'')+'</small></button>').join(''):'')+'</div></div>'+
+   '<div id="m2body">'+(ex?'':'<div class="note"><b>How this works.</b> Type any science idea. ExperimentX maps it to related experiments outside the syllabus, then opens one in a virtual lab. The concept map is built in, and for ideas it does not know it can ask Claude when this page runs in Claude.</div>')+'</div></div>';
+  $('#f2').addEventListener('submit',async e=>{e.preventDefault();S2.q=$('#q2').value;await discover()});
+  $$('[data-c]',app).forEach(b=>b.onclick=async()=>{S2.q=b.dataset.c;await discover()});
+  $('#l2').addEventListener('click',e=>{const b=e.target.closest('.item');if(b){S2.sel=+b.dataset.i;m2()}});
+  lab2&&lab2.stop();lab2=null;
+  if(ex){const body=$('#m2body');S2.trials[ex.title]=S2.trials[ex.title]||[];
+    body.innerHTML='<h3>'+esc(ex.title)+'</h3><p class="eyebrow" style="margin:2px 0 10px">Concept: '+esc(S2.q)+' · '+LABS[ex.lab].name+'</p><div class="prose"><p>'+esc(ex.idea)+'</p><ol class="steps" style="margin-bottom:12px">'+ex.method.map(s=>'<li>'+esc(s)+'</li>').join('')+'</ol></div>'+
+    '<div class="goal'+(S2.done[ex.title]?' done':'')+'" id="goal"><span class="eyebrow">'+(S2.done[ex.title]?'Done':'Challenge')+'</span><span>'+esc(ex.goal)+'</span></div><div id="labhost"></div>';
+    lab2=mountLab($('#labhost'),{id:'l2',lab:ex.lab,preset:ex.preset,trials:S2.trials[ex.title],onTrial:(tr,all)=>{
+      if(!S2.done[ex.title]&&ex.test(all)){S2.done[ex.title]=true;if(!prog.m2.includes(ex.title))prog.m2.push(ex.title);logAct('Completed challenge: '+ex.title);addPts(25,'challenge complete');award('solver');const g=$('#goal');g.classList.add('done');g.firstChild.textContent='Done';const it=$$('#l2 .item')[S2.sel];it&&(it.querySelector('small').textContent+=' · done')}
+      if(onlyAnyDiff(all))award('fair')}});}
+}
+function onlyAnyDiff(trials){const lab=LABS[trials[0]&&trials[0].lab];if(!lab)return false;return lab.params.some(q=>onlyDiff(trials,q.k))}
+async function discover(){
+  const q=S2.q.trim();if(!q){S2.note='Type a concept first, for example friction.';m2();return}
+  S2.note='';let items=matchConcept(q);
+  if(!items){S2.busy=true;m2();
+    const j=await askClaudeJSON('You help a school science website. A student typed the concept "'+q.replace(/"/g,"'")+'". Choose up to 3 experiments that explain it, using ONLY these labs and parameter ranges: '+LABLIST+'. Reply with JSON only: an array of objects {"title":string,"lab":one of the lab ids,"idea":one sentence,"method":[3 short steps],"preset":{param:value for that lab},"goal":"a challenge such as: Record two trials that differ only in X","vary":"the parameter key the student should vary"}. If the concept does not fit any lab, reply [].');
+    S2.busy=false;
+    if(Array.isArray(j)&&j.length){items=j.filter(x=>x&&LABS[x.lab]).slice(0,3).map(x=>{const lab=LABS[x.lab],pre={};lab.params.forEach(p=>{let v=x.preset&&Number(x.preset[p.k]);pre[p.k]=isFinite(v)&&v!==0?Math.min(p.max,Math.max(p.min,v)):p.v});
+      const vk=lab.params.find(p=>p.k===x.vary)?x.vary:lab.params[0].k;return{title:String(x.title||'Experiment').slice(0,80),lab:x.lab,preset:pre,idea:String(x.idea||'').slice(0,300),method:(Array.isArray(x.method)?x.method:[]).slice(0,4).map(s=>String(s).slice(0,160)),goal:'Record two trials that differ only in '+lab.params.find(p=>p.k===vk).l.toLowerCase()+'.',test:t=>onlyDiff(t,vk),ai:true}});
+      if(!items.length)items=null}}
+  if(!items){S2.res=null;S2.sel=null;S2.note='No experiments found for "'+esc(q)+'". Try friction, gravity, motion, energy, waves, electricity or density.';m2();return}
+  S2.res=items;S2.sel=0;logAct('Explored the concept: '+q);addPts(5,'concept explored');award('curious');m2();
+}
+
+/* ---------- Module 3 ---------- */
+const S3={idea:'Does a heavier pendulum swing faster?',lab:null,picked:new Set(),built:false,trials:[],note:'',busy:false,report:null,coach:''};
+let lab3=null;
+function suggestLab(text){
+  const w=' '+text.toLowerCase().replace(/[^a-z0-9= ]/g,' ')+' ';let best=null,sc=0;
+  Object.keys(LABS).forEach(k=>{const s=LABS[k].keywords.filter(x=>w.includes(x)).length;if(s>sc){sc=s;best=k}});return best;
+}
+function m3(){
+  const app=$('#app');
+  const lab=S3.lab&&LABS[S3.lab];
+  let mats='';
+  if(lab){const all=lab.materials.essential.concat(lab.materials.extra).sort();
+    mats='<div class="stepn"><span class="eyebrow">Step 2</span><h3>Choose materials for your bench</h3></div><p class="note" style="margin-bottom:10px">Suggested for <b>'+lab.name+'</b>. Pick what you need. Some items on the shelf are not needed for this experiment.</p><div class="chips" id="mats">'+
+     all.map(m=>'<button class="chip" data-m="'+esc(m)+'" aria-pressed="'+S3.picked.has(m)+'">'+esc(m)+'</button>').join('')+'</div><div class="actions" style="margin-top:12px"><button class="btn primary" id="build">Build bench</button></div>';}
+  app.innerHTML='<div class="stepn" style="margin-top:0"><span class="eyebrow">Step 1</span><h3>Describe your experiment idea</h3></div><form id="f3" class="field" style="max-width:640px"><label for="idea">What do you want to find out?</label><textarea id="idea">'+esc(S3.idea)+'</textarea>'+
+   '<div class="chips">'+['Does a heavier pendulum swing faster?','Will a wooden block float in oil?','Does hot water dissolve salt faster?','Does more light make a plant release more oxygen?','Is a coin really 50-50?','How does the slope change a line?'].map(c=>'<button type="button" class="chip" data-idea="'+esc(c)+'">'+esc(c)+'</button>').join('')+'</div>'+
+   '<div class="actions"><button class="btn primary" type="submit"'+(S3.busy?' disabled':'')+'>'+(S3.busy?'Thinking…':'Suggest materials')+'</button></div></form>'+
+   (S3.note?'<p class="note" style="margin-top:12px;max-width:640px">'+S3.note+'</p>':'')+mats+'<div id="m3lab"></div><div id="m3out"></div>';
+  $('#f3').addEventListener('submit',async e=>{e.preventDefault();S3.idea=$('#idea').value;await pickLab()});
+  $$('[data-idea]',app).forEach(b=>b.onclick=async()=>{S3.idea=b.dataset.idea;await pickLab()});
+  const mt=$('#mats');mt&&mt.addEventListener('click',e=>{const b=e.target.closest('[data-m]');if(!b)return;const m=b.dataset.m;S3.picked.has(m)?S3.picked.delete(m):S3.picked.add(m);b.setAttribute('aria-pressed',S3.picked.has(m))});
+  const bb=$('#build');bb&&(bb.onclick=build);
+  lab3&&lab3.stop();lab3=null;if(S3.built&&lab)mountBench();
+}
+async function pickLab(){
+  S3.idea=S3.idea.trim();if(!S3.idea){S3.note='Describe an idea first.';m3();return}
+  let k=suggestLab(S3.idea);
+  if(!k){S3.busy=true;S3.note='';m3();const j=await askClaudeJSON('A student wants to test this idea in a virtual science lab: "'+S3.idea.replace(/"/g,"'")+'". Which one lab fits best? Labs: '+LABLIST+'. Reply JSON only: {"lab":"<lab id or null>"}');S3.busy=false;if(j&&LABS[j.lab])k=j.lab}
+  if(!k){S3.lab=null;S3.note='This idea does not fit one of the twelve labs yet (inclined plane, pendulum, projectile, circuit, float or sink, dissolving salt, titration, reaction rate, photosynthesis, osmosis, coin flips, straight-line graph). Try rewording it around one of those.';m3();return}
+  S3.lab=k;S3.picked=new Set();S3.built=false;S3.trials=[];S3.report=null;S3.coach='';
+  S3.note='Best match: <b>'+LABS[k].name+'</b>. The guide matched your words to this lab.';m3();
+}
+function build(){
+  const lab=LABS[S3.lab],miss=lab.materials.essential.filter(m=>!S3.picked.has(m));
+  if(miss.length){S3.note='Your bench is missing: <b>'+miss.map(esc).join(', ')+'</b>. You need these to run the experiment.';m3();return}
+  S3.built=true;const extra=lab.materials.extra.filter(m=>S3.picked.has(m));
+  S3.note=extra.length?'Bench built. Not needed here: <b>'+extra.map(esc).join(', ')+'</b>. They stay on the shelf.':'Bench built with exactly the materials this experiment needs.';
+  S3.reported=false;logAct('Built a bench: '+lab.name);addPts(10,'bench built');award('builder');m3();
+}
+function mountBench(){
+  const lab=LABS[S3.lab];$('#m3lab').innerHTML='<div class="stepn"><span class="eyebrow">Step 3</span><h3>Run your experiment</h3></div><p class="note" style="margin-bottom:12px">Change <b>one variable at a time</b> and record a trial each time. That is a fair test.</p><div id="labhost"></div>'+
+   '<div class="stepn"><span class="eyebrow">Step 4</span><h3>Get feedback and a report</h3></div><div class="actions"><button class="btn" id="coach">Analyse my actions</button><button class="btn primary" id="rep">Generate report</button></div><div id="m3res"></div>';
+  lab3=mountLab($('#labhost'),{id:'l3',lab:S3.lab,trials:S3.trials,onTrial:(tr,all)=>{if(onlyAnyDiff(all))award('fair')}});
+  $('#coach').onclick=showCoach;$('#rep').onclick=showReport;
+  if(S3.coach)$('#m3res').innerHTML=S3.coach;
+}
+function analyse(){
+  const lab=LABS[S3.lab],T=S3.trials,out={lines:[],effects:[],tips:[]};
+  if(!T.length){out.tips.push('Record at least two trials first.');return out}
+  const seen=new Set();
+  for(let i=0;i<T.length;i++)for(let j=i+1;j<T.length;j++){
+    const a=T[i],b=T[j],diff=lab.params.filter(q=>a.p[q.k]!==b.p[q.k]);
+    if(!diff.length){out.tips.push('Trials '+a.n+' and '+b.n+' use the same settings, so the second adds no new information.');continue}
+    if(diff.length===1){const q=diff[0],key=q.k+a.p[q.k]+'-'+b.p[q.k];if(seen.has(key))continue;seen.add(key);
+      const va=a.key.value,vb=b.key.value,same=Math.abs(va-vb)<=Math.max(1e-9,Math.abs(va)*0.005);
+      out.lines.push('Fair test (trials '+a.n+' and '+b.n+'): changing '+q.l.toLowerCase()+' from '+a.p[q.k]+' to '+b.p[q.k]+' '+(same?'did not change':'changed')+' the '+a.key.label.toLowerCase()+(same?' ('+fmt(va,a.key.d)+' '+a.key.unit+' both times).':' from '+fmt(va,a.key.d)+' to '+fmt(vb,a.key.d)+' '+a.key.unit+'.'));
+      out.effects.push({q,same,up:vb>va,from:a.p[q.k],to:b.p[q.k]})}}
+  if(!out.effects.length&&T.length>=2)out.tips.push('You changed more than one variable between trials, so you cannot tell which one caused the change. Change one variable at a time.');
+  if(T.length===1)out.tips.push('Record a second trial with one variable changed to compare.');
+  const extra=lab.materials.extra.filter(m=>S3.picked.has(m));if(extra.length)out.tips.push('You selected materials this experiment does not need ('+extra.join(', ')+').');
+  return out;
+}
+function conclusion(a){
+  if(!a.effects.length)return 'More fair tests are needed before drawing a conclusion.';
+  const keyl=LABS[S3.lab].calc(Object.fromEntries(LABS[S3.lab].params.map(q=>[q.k,q.v]))).key.label.toLowerCase();
+  const done=new Set();return a.effects.filter(e=>{if(done.has(e.q.k))return false;done.add(e.q.k);return true}).map(e=>e.same?'The '+e.q.l.toLowerCase()+' did not affect the '+keyl+'.':'Increasing the '+e.q.l.toLowerCase()+' '+(e.to>e.from?(e.up?'increased':'decreased'):(e.up?'decreased':'increased'))+' the '+keyl+'.').join(' ');
+}
+function showCoach(){
+  const a=analyse();let h='<div class="note" style="margin-top:12px"><b>Action analysis</b><span class="ai-tag">built-in guide</span>';
+  h+='<ul class="coach">'+(a.lines.map(l=>'<li>'+esc(l)+'</li>').join('')+a.tips.map(l=>'<li>'+esc(l)+'</li>').join('')||'<li>Record some trials to get feedback.</li>')+'</ul><div id="claudebox"></div><button class="btn sm" id="cl">Ask Claude for extra feedback</button></div>';
+  S3.coach=h;$('#m3res').innerHTML=h;$('#cl').onclick=async()=>{const bx=$('#claudebox'),btn=$('#cl');btn.disabled=true;bx.textContent='Thinking…';
+    const txt=await askClaudeText('You are a friendly science coach for a school student. The idea being tested: "'+S3.idea.replace(/"/g,"'")+'". Lab: '+LABS[S3.lab].name+'. Trials (parameters and result): '+JSON.stringify(S3.trials.map(t=>({p:t.p,result:fmt(t.key.value,t.key.d)+' '+t.key.unit})))+'. In under 90 words, say what the student did well and one thing to try next. Plain text.');
+    bx.innerHTML=txt?'<p style="margin:8px 0">'+esc(txt)+'</p>':'<p style="margin:8px 0">Claude is not available here, so only the built-in feedback is shown.</p>';btn.hidden=!!txt;btn.disabled=false;S3.coach=$('#m3res').innerHTML}}
+function reportText(concl){
+  const lab=LABS[S3.lab],a=analyse();
+  return ['EXPERIMENTX LAB REPORT','','Aim: '+S3.idea,'Lab: '+lab.name,'Materials: '+Array.from(S3.picked).sort().join(', '),'',
+    'Method:','1. Built the bench with the materials above.','2. Changed the variables in the virtual lab and recorded each trial.','',
+    'Observations:'].concat(S3.trials.map(t=>'  Trial '+t.n+': '+lab.params.map(q=>q.l+' = '+t.p[q.k]+(q.u?' '+q.u:'')).join(', ')+' -> '+t.key.label+' = '+fmt(t.key.value,t.key.d)+' '+t.key.unit+' ('+t.verdict+')'),
+    ['','Analysis:'],a.lines.map(l=>'  '+l),a.lines.length?[]:['  No fair test yet.'],['','Conclusion:','  '+concl,'','Generated by ExperimentX from the recorded actions of the student.']).flat().join('\n');
+}
+function showReport(){
+  if(!S3.trials.length){$('#m3res').innerHTML='<p class="note" style="margin-top:12px">Record at least one trial first. The report is built from your recorded actions.</p>';return}
+  const lab=LABS[S3.lab],a=analyse(),c=S3.report&&S3.report.c||conclusion(a);
+  $('#m3res').innerHTML='<div class="report"><h3>Lab report</h3><p class="eyebrow">'+esc(lab.name)+' · '+S3.trials.length+' trials</p>'+
+   '<h4>Aim</h4><p>'+esc(S3.idea)+'</p><h4>Materials</h4><p>'+esc(Array.from(S3.picked).sort().join(', '))+'</p>'+
+   '<h4>Observations</h4><div class="tablewrap"><table><thead><tr><th>#</th>'+lab.params.map(q=>'<th>'+q.l+'</th>').join('')+'<th>'+S3.trials[0].key.label+'</th></tr></thead><tbody>'+S3.trials.map(t=>'<tr><td class="num">'+t.n+'</td>'+lab.params.map(q=>'<td class="num">'+t.p[q.k]+'</td>').join('')+'<td class="num">'+fmt(t.key.value,t.key.d)+' '+t.key.unit+'</td></tr>').join('')+'</tbody></table></div>'+
+   '<h4>Analysis</h4><ul>'+(a.lines.map(l=>'<li>'+esc(l)+'</li>').join('')||'<li>No fair test yet: change one variable at a time.</li>')+'</ul>'+
+   '<h4>Conclusion (edit it in your own words)</h4><textarea id="concl">'+esc(c)+'</textarea><div class="actions" style="margin-top:10px"><button class="btn sm primary" id="cpy">Copy report</button><button class="btn sm" id="sav">Save report</button></div></div>';
+  S3.report={c};
+  if(!S3.reported){S3.reported=true;prog.reports++;logAct('Generated a report: '+lab.name);addPts(30,'report generated');award('reporter')}
+  $('#concl').addEventListener('input',e=>{S3.report.c=e.target.value});
+  $('#cpy').onclick=async()=>{const t=reportText($('#concl').value);try{await navigator.clipboard.writeText(t);toast('Report copied')}catch(e){const ta=$('#concl');ta.focus();ta.select();toast('Select and copy the conclusion; copy is blocked here')}};
+  $('#sav').onclick=async()=>{try{const d=await window.claude?.use?.('downloads');if(!d){toast('Saving is not available here. Use Copy report.');return}await d.save({filename:'experimentx-report.txt',data:new Blob([reportText($('#concl').value)],{type:'text/plain'})});toast('Report saved')}catch(e){toast('Report not saved')}};
+}
+
+const today=()=>new Date().toISOString().slice(0,10);
+const SUBJECTS=['Physics','Chemistry','Biology','Maths'];
+function badgeProg(id){
+  const e=prog.badges.includes(id),dn=prog.day.d===today()?prog.day.n:0;
+  const P={first:[prog.nt,1,'Record a trial in any lab'],explorer:[prog.labs.length,3,'different labs tried'],curious:[e?1:0,1,'Enter a concept in Module 2'],solver:[prog.m2.length,1,'Complete a Module 2 challenge'],
+   fair:[e?1:0,1,'Change just one variable between two trials'],builder:[e?1:0,1,'Build a bench in Module 3'],reporter:[prog.reports,1,'Generate a report in Module 3'],viewer:[e?1:0,1,'Play a Module 1 demo to the end'],
+   allround:[prog.subs.length,4,'subjects tried'],goal:[dn,5,'trials today'],finisher:[prog.done.length,1,'Record 3 trials in a textbook experiment']}[id];
+  const n=Math.min(P[0],P[1]);return{n:n,tot:P[1],txt:n+' / '+P[1]+' · '+P[2],pct:Math.round(n/P[1]*100)};
+}
+function goTo(mod,o){o=o||{};if(o.tab)S1.tab=o.tab;if(o.subj)S1.subj=o.subj;if(o.sel)S1.sel=o.sel;show(mod);$('#lab').scrollIntoView()}
+function goBadge(id){
+  if(['curious','solver'].includes(id))goTo(2);else if(['builder','reporter'].includes(id))goTo(3);
+  else if(id==='viewer')goTo(1,{tab:'demo'});else if(id==='fair'||id==='finisher'||id==='first'||id==='goal')goTo(1,{tab:'lab'});else goTo(1,{tab:'lab'});
+}
+function drawBadges(){
+  const el=$('#badges');if(!el)return;
+  const list=BADGES.filter(b=>UI.bf==='all'||(UI.bf==='earned')===prog.badges.includes(b.id));
+  const sel=UI.sel&&BADGES.find(b=>b.id===UI.sel);
+  let det='<div class="bdetail note">Select a badge to see how to earn it and how close you are.</div>';
+  if(sel){const on=prog.badges.includes(sel.id),bp=badgeProg(sel.id);
+    det='<div class="bdetail panel"><div class="bd-head"><span class="ic big'+(on?' on':'')+'">'+sel.ic+'</span><div><h3>'+sel.t+'</h3><p>'+sel.d+'</p></div></div>'+
+     (on?'<p class="good">Earned. Well done.</p>':'<div class="mrow" style="grid-template-columns:minmax(0,1fr) auto"><span class="bar2"><i style="width:'+bp.pct+'%"></i></span><span class="mono">'+bp.txt.split(' · ')[0]+'</span></div><p class="mute-s">'+esc(bp.txt.split(' · ')[1])+'</p><button class="btn primary sm" data-gob="'+sel.id+'">Take me there</button>')+'</div>';}
+  el.innerHTML='<div class="chips" id="bfil" style="margin-bottom:12px">'+[['all','All badges'],['earned','Earned ('+prog.badges.length+')'],['locked','Still to earn ('+(BADGES.length-prog.badges.length)+')']].map(x=>'<button class="chip" data-bf="'+x[0]+'" aria-pressed="'+(UI.bf===x[0])+'">'+x[1]+'</button>').join('')+'</div>'+
+   '<div class="badges">'+(list.length?list.map(b=>{const on=prog.badges.includes(b.id),bp=badgeProg(b.id);return '<button class="badge'+(on?' on':'')+(UI.sel===b.id?' sel':'')+'" data-b="'+b.id+'"><span class="ic">'+b.ic+'</span><b>'+b.t+'</b><small>'+(on?'Earned':bp.txt)+'</small>'+(on?'':'<span class="bar2"><i style="width:'+bp.pct+'%"></i></span>')+(prog.newB.includes(b.id)?'<span class="newtag">NEW</span>':'')+'</button>'}).join(''):'<p class="note">Nothing here yet.</p>')+'</div>'+det;
+}
+function drawDash(){
+  const el=$('#dash');if(!el)return;
+  const lv=Math.floor(prog.pts/100)+1,m2all=new Set(BEYOND.flatMap(g=>g.items.map(i=>i.title))).size,next=TEXT.find(e=>!prog.done.includes(e.id)),dn=prog.day.d===today()?Math.min(5,prog.day.n):0;
+  const row=(l,n,tot,txt)=>'<div class="mrow"><span>'+l+'</span><span class="bar2"><i style="width:'+Math.min(100,Math.round(n/tot*100))+'%"></i></span><span class="mono">'+txt+'</span></div>';
+  const cur=Math.min(lv,LEVELS.length),sl=UI.lv==null?cur-1:UI.lv;
+  const ladder='<div class="lvladder">'+LEVELS.map((n,i)=>'<button class="lvstep'+(i+1===cur?' cur':'')+(i+1<cur?' past':'')+'" data-l="'+i+'" aria-pressed="'+(sl===i)+'"><b>L'+(i+1)+'</b><small>'+n+'</small></button>').join('')+'</div><p class="mute-s" id="lvinfo">Level '+(sl+1)+' · '+LEVELS[sl]+': starts at '+(sl*100)+' points. '+(sl+1<cur?'Reached.':sl+1===cur?'You are here. '+(100-prog.pts%100)+' points to the next level.':(sl*100-prog.pts)+' points to go.')+'</p>';
+  const dots='<div class="dots">'+[1,2,3,4,5].map(i=>'<span class="dot'+(i<=dn?' on':'')+'"></span>').join('')+'</div>';
+  el.innerHTML='<div class="stats"><div class="stat"><b>'+prog.pts+'</b><span>Total points</span></div><div class="stat"><b>Level '+lv+'</b><span>'+LEVELS[Math.min(lv-1,LEVELS.length-1)]+'</span></div><div class="stat"><b>'+prog.done.length+' / '+TEXT.length+'</b><span>Textbook experiments completed</span></div><div class="stat"><b>'+prog.nt+'</b><span>Trials recorded</span></div></div>'+
+   '<div class="card" style="margin-bottom:12px"><h3>Levels</h3>'+ladder+'</div>'+
+   '<div class="dash2"><div class="card"><h3>Today’s goal: 5 trials</h3>'+dots+'<p class="mute-s">'+(dn>=5?'Goal reached. +15 points earned.':(5-dn)+' more trial'+(5-dn===1?'':'s')+' to reach it (+15 points).')+'</p>'+(dn<5?'<button class="btn primary sm" data-gogoal="1">Record a trial</button>':'')+
+   '<h3 style="margin-top:16px">Subjects</h3><div class="subjcards">'+SUBJECTS.map(sj=>{const n=prog.sc[sj]||0;return '<button class="subjc" data-subj="'+sj+'"><b>'+sj+'</b><span class="bar2"><i style="width:'+Math.min(100,n*10)+'%"></i></span><small>'+n+' trial'+(n===1?'':'s')+'</small></button>'}).join('')+'</div></div>'+
+   '<div class="card"><h3>Module progress</h3>'+row('Module 1',prog.done.length,TEXT.length,prog.done.length+' of '+TEXT.length)+row('Module 2',prog.m2.length,m2all,prog.m2.length+' of '+m2all)+row('Module 3',Math.min(prog.reports,5),5,prog.reports+(prog.reports===1?' report':' reports'))+
+   '<h3 style="margin-top:14px">Suggested next experiment</h3>'+(next?'<p>'+esc(next.title)+'</p><button class="btn primary sm" data-next="'+next.id+'">Open it</button>':'<p>You have completed every textbook experiment. Try a challenge in Module 2.</p>')+
+   '<h3 style="margin-top:14px">Recent activity</h3>'+(prog.act.length?'<ul class="acts">'+prog.act.map(a=>'<li>'+esc(a.t)+'</li>').join('')+'</ul>':'<p class="mute-s">No activity yet. Run a lab and record a trial to begin.</p>')+'</div></div>';
+}
+/* ---------- shell ---------- */
+let mod=1;
+function show(n){mod=n;$$('.modtab').forEach(b=>b.setAttribute('aria-selected',String(+b.dataset.mod===n)));[m1,m2,m3][n-1]()}
+$$('.modtab').forEach(b=>b.onclick=()=>show(+b.dataset.mod));
+$$('[data-go]').forEach(b=>b.onclick=()=>{show(+b.dataset.go);$('#lab').scrollIntoView()});
+$('#resetprog').onclick=()=>{const b=$('#resetprog');if(!UI.reset){UI.reset=true;b.textContent='Click again to erase all progress';setTimeout(()=>{UI.reset=false;b.textContent='Reset my progress'},4000);return}UI.reset=false;b.textContent='Reset my progress';prog=BLANK();S3.reported=false;UI.sel=null;saveProg();toast('Progress reset')};
+$('#themebtn').onclick=()=>{const r=document.documentElement,dark=r.dataset.theme?r.dataset.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches;r.dataset.theme=dark?'light':'dark'};
+
+/* hero canvas: looping ramp demo */
+(function(){const c=$('#herocv'),x=c.getContext('2d');x.scale(1.5,1.5);const lab=LABS.incline,p={angle:28,mu:0.25,mass:2},r=lab.calc(p);let t0=performance.now();
+  function f(now){if(!c.isConnected)return;const t=((now-t0)/1000)%(r.t+1.4);x.clearRect(0,0,640,374);x.fillStyle=col('--canvas');x.fillRect(0,0,640,374);x.save();x.translate(0,20);lab.draw(x,p,r,t);x.restore();requestAnimationFrame(f)}
+  requestAnimationFrame(f)})();
+
+
+$('#progress').addEventListener('click',e=>{
+  let t;
+  if(t=e.target.closest('[data-b]')){UI.sel=UI.sel===t.dataset.b?null:t.dataset.b;if(UI.sel){prog.newB=prog.newB.filter(x=>x!==UI.sel);store.set('ex_prog',prog)}drawBadges();return}
+  if(t=e.target.closest('[data-bf]')){UI.bf=t.dataset.bf;drawBadges();return}
+  if(t=e.target.closest('[data-gob]')){goBadge(t.dataset.gob);return}
+  if(t=e.target.closest('[data-l]')){UI.lv=+t.dataset.l;drawDash();return}
+  if(t=e.target.closest('[data-subj]')){goTo(1,{subj:t.dataset.subj,tab:'learn'});return}
+  if(t=e.target.closest('[data-next]')){goTo(1,{sel:t.dataset.next,tab:'lab'});return}
+  if(e.target.closest('[data-gogoal]')){goTo(1,{tab:'lab'});return}
+});
+const chip=$('#scorechip');chip.addEventListener('click',()=>$('#progress').scrollIntoView());chip.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();$('#progress').scrollIntoView()}});
+drawScore();drawBadges();drawDash();show(1);
+})();
+</script>
+
+</body></html>
